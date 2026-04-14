@@ -1,13 +1,12 @@
 # Suspect — Person Intelligence Portal
 
-A CodeIgniter 4 web application for managing and querying person intelligence records.
+A CodeIgniter 3 web application for managing and querying person intelligence records.
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 7.4+
 - Composer
 - MySQL / MariaDB
-- Apache with `mod_rewrite` enabled (web root: `public/`)
 
 ## Setup
 
@@ -21,9 +20,11 @@ composer install
 
 ### 2. Configure environment
 
-```bash
-cp .env.example .env
-```
+### Code Refrence 
+
+| <a href="http://ctd.drams.com/personprofile/person_profile/?id=VGdqZEdnK0tyWnc3NCswTkR0NTRzQT09"> <span class=""> <i class="fa fa-inbox"></i> Person Profile &nbsp</span> </a>
+we need to implement all this page tabs 
+same database auth using dramlive repo
 
 Edit `.env` and set:
 
@@ -44,9 +45,9 @@ Point `DocumentRoot` to the `public/` directory:
 ```apache
 <VirtualHost *:80>
     ServerName ctd.suspect.kpk
-    DocumentRoot /path/to/suspect/public
+    DocumentRoot /path/to/suspect/
 
-    <Directory /path/to/suspect/public>
+    <Directory /path/to/suspect/>
         AllowOverride All
         Require all granted
     </Directory>
