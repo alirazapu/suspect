@@ -92,28 +92,39 @@ class Auth extends BaseController
     {
         $db      = db_connect();
         $hashKey = $this->suspectConfig->dramsHashKey;
-        $hashed  = hash('sha256', $hashKey . $password);
 
+        // Fetch the user row first so we can read the stored salt.
         $user = $db->table('users')
                    ->where('username', $username)
-                   ->where('password', $hashed)
                    ->where('is_active', 1)
                    ->get()->getRow();
-        if ($user) {
+
+        if (!$user) {
+            return false;
+        }
+
+        $stored = $user->password ?? '';
+
+        // Kohana Auth salted hash (used by drams/aies):
+        //   stored = {salt}{sha256(hash_key . salt . password)}
+        //   salt length = len(stored) - 64  (sha256 hex is always 64 chars)
+        if (strlen($stored) > 64) {
+            $saltSize = strlen($stored) - 64;
+            $salt     = substr($stored, 0, $saltSize);
+            $expected = $salt . hash('sha256', $hashKey . $salt . $password);
+            if (hash_equals($expected, $stored)) {
+                return $user;
+            }
+        }
+
+        // Fallback: no-salt peppered hash — sha256(hash_key . password)
+        if (strlen($stored) === 64 && hash_equals(hash('sha256', $hashKey . $password), $stored)) {
             return $user;
         }
 
-        // Fallback: plain sha256 (no pepper) for legacy users
-        $hashedPlain = hash('sha256', $password);
-        if ($hashedPlain !== $hashed) {
-            $user = $db->table('users')
-                       ->where('username', $username)
-                       ->where('password', $hashedPlain)
-                       ->where('is_active', 1)
-                       ->get()->getRow();
-            if ($user) {
-                return $user;
-            }
+        // Fallback: plain sha256 (no pepper, no salt) for legacy users
+        if (strlen($stored) === 64 && hash_equals(hash('sha256', $password), $stored)) {
+            return $user;
         }
 
         return false;
