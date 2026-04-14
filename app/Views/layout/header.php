@@ -11,8 +11,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap4-theme/1.0.0/select2-bootstrap4.min.css">
   <?php if (isset($extra_css)) echo $extra_css; ?>
 </head>
-<body class="<?php echo isset($body_class) ? htmlspecialchars($body_class) : 'hold-transition sidebar-mini layout-fixed'; ?>"
-      style="<?php echo (isset($body_class) && strpos($body_class, 'login-page') !== false) ? 'margin:0;padding:0;overflow-x:hidden;' : ''; ?>">
+<body class="<?php echo (isset($body_class) && strpos($body_class, 'login-page') !== false) ? '' : (isset($body_class) ? htmlspecialchars($body_class) : 'hold-transition sidebar-mini layout-fixed'); ?>"
+      style="<?php echo (isset($body_class) && strpos($body_class, 'login-page') !== false) ? 'margin:0;padding:0;background:#f4f6fb;' : ''; ?>">
 <?php if (!isset($body_class) || strpos($body_class, 'login-page') === false): ?>
 <div class="wrapper">
 <!-- Navbar -->
