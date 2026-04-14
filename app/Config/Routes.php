@@ -10,6 +10,9 @@ $routes->setDefaultMethod('login');
 $routes->setTranslateURIDashes(false);
 $routes->set404Override();
 
+// Root
+$routes->get('/', 'Auth::login');
+
 // Auth routes
 $routes->get('auth/login',  'Auth::login');
 $routes->post('auth/login', 'Auth::login');
