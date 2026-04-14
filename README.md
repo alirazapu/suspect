@@ -4,7 +4,7 @@ A CodeIgniter 4 web application for managing and querying person intelligence re
 
 ## Requirements
 
-- PHP 8.1+
+- PHP 8.2+
 - Composer
 - MySQL / MariaDB
 - Apache with `mod_rewrite` enabled (web root: `public/`)

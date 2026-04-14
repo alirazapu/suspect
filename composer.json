@@ -3,7 +3,7 @@
     "description": "Suspect - Person Intelligence Portal",
     "type": "project",
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "codeigniter4/framework": "^4.5"
     },
     "require-dev": {},
