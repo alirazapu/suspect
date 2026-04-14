@@ -1,103 +1,114 @@
-# Suspect
+# Suspect — Person Intelligence Portal
 
-Web application for `http://ctd.suspect.kpk` — built with CodeIgniter 3 and AdminLTE 3.
-
-Shares the `aiesplus` MySQL database with the `dramslive` app (same `users` table, same `persons` data).
-
----
+A CodeIgniter 4 web application for managing and querying person intelligence records.
 
 ## Requirements
 
-- PHP 7.4+
-- MySQL / MariaDB (database: `aiesplus`)
-- Apache with `mod_rewrite` enabled
-- PHP extensions: `mysqli`, `openssl`, `mbstring`, `json`
+- PHP 8.1+
+- Composer
+- MySQL / MariaDB
+- Apache with `mod_rewrite` enabled (web root: `public/`)
 
----
+## Setup
 
-## Installation
+### 1. Clone & install dependencies
 
 ```bash
-# 1. Clone the repo
 git clone <repo-url> suspect
 cd suspect
+composer install
+```
 
-# 2. Copy environment config
+### 2. Configure environment
+
+```bash
 cp .env.example .env
-# Edit .env with your values
-
-# 3. Load environment variables (Apache / php-fpm: set via SetEnv or fastcgi_param)
-# Or source .env in your shell for CLI testing
-
-# 4. Point Apache VirtualHost DocumentRoot to this directory
-# Enable mod_rewrite and AllowOverride All
-
-# 5. Ensure writable directories
-chmod -R 777 application/logs application/cache
 ```
 
----
+Edit `.env` and set:
 
-## Environment Variables
+| Variable | Description |
+|---|---|
+| `app.baseURL` | Your site URL (e.g. `http://ctd.suspect.kpk/`) |
+| `database.default.hostname` | DB host |
+| `database.default.database` | DB name |
+| `database.default.username` | DB user |
+| `database.default.password` | DB password |
+| `DRAMS_HASH_KEY` | Must match `hash_key` in dramslive `application/config/auth.php` |
+| `SSO_SECRET` | Shared SSO secret (reserved for future HMAC validation) |
 
-| Variable            | Default                     | Description                               |
-|---------------------|-----------------------------|-------------------------------------------|
-| `APP_BASE_URL`      | `http://ctd.suspect.kpk/`   | Full base URL including trailing slash    |
-| `DB_HOSTNAME`       | `localhost`                 | MySQL hostname                            |
-| `DB_USERNAME`       | `root`                      | MySQL username                            |
-| `DB_PASSWORD`       | *(empty)*                   | MySQL password                            |
-| `DB_DATABASE`       | `aiesplus`                  | MySQL database name                       |
-| `SSO_SECRET`        | *(empty)*                   | Shared secret for SSO token validation    |
-| `DRAMS_HASH_KEY`    | *(empty)*                   | Must match dramslive `auth.php` `hash_key` (for local login) |
-| `CI_ENCRYPTION_KEY` | `suspect-default-key-...`   | CodeIgniter session encryption key        |
-| `CI_ENV`            | `production`                | CI environment (`development`/`production`) |
+### 3. Apache VirtualHost
 
----
+Point `DocumentRoot` to the `public/` directory:
 
-## SSO Flow
+```apache
+<VirtualHost *:80>
+    ServerName ctd.suspect.kpk
+    DocumentRoot /path/to/suspect/public
 
-Dramslive generates a one-time `login_token` in the `users` table and redirects to:
+    <Directory /path/to/suspect/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+### 4. Writable directory permissions
+
+```bash
+chmod -R 775 writable/
+```
+
+## Routes
+
+| Method | URI | Controller |
+|---|---|---|
+| GET/POST | `/auth/login` | `Auth::login` |
+| GET | `/auth/logout` | `Auth::logout` |
+| GET | `/auth/sso` | `Auth::sso` |
+| GET | `/persons` | `Persons::index` |
+| GET | `/persons/profile?id=<encrypted>` | `Persons::profile` |
+| GET | `/api/persons/:id/basic` | `Api::persons_basic` |
+| GET | `/api/persons/:id/detailed` | `Api::persons_detailed` |
+| GET | `/api/persons/:id/identities` | `Api::persons_identities` |
+| GET | `/api/persons/:id/education` | `Api::persons_education` |
+| GET | `/api/persons/:id/income` | `Api::persons_income` |
+| GET | `/api/persons/:id/banks` | `Api::persons_banks` |
+| GET | `/api/persons/:id/assets` | `Api::persons_assets` |
+| GET | `/api/persons/:id/mobiles` | `Api::persons_mobiles` |
+| GET | `/api/persons/:id/relations` | `Api::persons_relations` |
+| GET | `/api/persons/:id/criminal` | `Api::persons_criminal` |
+| GET | `/api/persons/:id/affiliations` | `Api::persons_affiliations` |
+| GET | `/api/persons/:id/projects` | `Api::persons_projects` |
+| GET | `/api/persons/:id/category_history` | `Api::persons_category_history` |
+| GET | `/api/persons/:id/reports` | `Api::persons_reports` |
+| GET | `/api/persons/search?q=` | `Api::persons_search` |
+
+## Project Structure
 
 ```
-http://ctd.suspect.kpk/auth/sso?token=<TOKEN>[&pid=<ENC_PID>][&return=<URL>]
+app/
+  Config/        — App, Database, Routes, Filters, Suspects (custom)
+  Controllers/   — Auth, Persons, Api, BaseController
+  Filters/       — AuthFilter
+  Helpers/       — pid_helper (AES-256-CBC PID encrypt/decrypt)
+  Models/        — PersonModel
+  Views/         — layout/, auth/, persons/
+public/          — Web root (index.php, .htaccess)
+writable/        — Cache, logs, sessions, uploads
+.env             — Local environment config (not committed)
+.env.example     — Template for .env
+spark            — CI4 CLI tool
 ```
 
-Suspect:
-1. Looks up the `login_token` in the shared `users` table
-2. Checks token expiry (`token_expires` field)
-3. Nullifies the token (one-time use)
-4. Creates a session and redirects to the person profile (if `pid` given) or `/persons`
+## Authentication
 
----
+- Standard login at `/auth/login` using SHA-256 hashed passwords (compatible with dramslive Kohana Auth)
+- SSO login at `/auth/sso?token=<token>` using one-time tokens stored in the `users` table
+- Session key: `suspect_user`
 
-## Available Routes
+## Notes
 
-| Method | URL                                   | Description                   |
-|--------|---------------------------------------|-------------------------------|
-| GET    | `/auth/login`                         | Login page                    |
-| POST   | `/auth/login`                         | Process login                 |
-| GET    | `/auth/logout`                        | Destroy session, redirect     |
-| GET    | `/auth/sso?token=&pid=&return=`       | SSO token login               |
-| GET    | `/persons`                            | Persons listing with filters  |
-| GET    | `/persons/profile?id=<enc_pid>`       | Person profile (tabbed)       |
-| GET    | `/api/persons/{id}/basic`             | JSON: basic info              |
-| GET    | `/api/persons/{id}/detailed`          | JSON: detailed info           |
-| GET    | `/api/persons/{id}/identities`        | JSON: CNIC / identities       |
-| GET    | `/api/persons/{id}/education`         | JSON: education records       |
-| GET    | `/api/persons/{id}/income`            | JSON: income sources          |
-| GET    | `/api/persons/{id}/banks`             | JSON: bank accounts           |
-| GET    | `/api/persons/{id}/assets`            | JSON: assets                  |
-| GET    | `/api/persons/{id}/mobiles`           | JSON: mobile numbers          |
-| GET    | `/api/persons/{id}/relations`         | JSON: family relations        |
-| GET    | `/api/persons/{id}/criminal`          | JSON: criminal records        |
-| GET    | `/api/persons/{id}/affiliations`      | JSON: affiliations/trainings  |
-| GET    | `/api/persons/{id}/projects`          | JSON: linked projects         |
-| GET    | `/api/persons/{id}/category_history`  | JSON: category change history |
-| GET    | `/api/persons/{id}/reports`           | JSON: person reports          |
-| GET    | `/api/persons/search?q=`              | JSON: typeahead search        |
-
----
-
-## Theme
-
-[AdminLTE 3](https://adminlte.io/) (Bootstrap 4-based), loaded via CDN.
+- `vendor/` is excluded from version control
+- `.env` is excluded from version control — never commit secrets
+- CI_ENVIRONMENT should be `production` on the server
