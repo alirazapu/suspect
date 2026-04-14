@@ -92,28 +92,57 @@ class Auth extends BaseController
     {
         $db      = db_connect();
         $hashKey = $this->suspectConfig->dramsHashKey;
-        $hashed  = hash('sha256', $hashKey . $password);
 
+        // Fetch the user row first so we can read the stored salt.
         $user = $db->table('users')
                    ->where('username', $username)
-                   ->where('password', $hashed)
                    ->where('is_active', 1)
                    ->get()->getRow();
-        if ($user) {
+
+        if (!$user) {
+            return false;
+        }
+
+        $stored = $user->password ?? '';
+
+        // Kohana Auth salted hash — sha256 hex output is always 64 chars,
+        // so any stored value longer than 64 chars contains a leading salt.
+        if (strlen($stored) > 64) {
+            $saltSize = strlen($stored) - 64;
+            $salt     = substr($stored, 0, $saltSize);
+
+            // Primary: standard Kohana Auth ORM driver uses hash_hmac.
+            //   stored = {salt}{hmac_sha256(salt.password, hash_key)}
+            if (hash_equals($salt . hash_hmac('sha256', $salt . $password, $hashKey), $stored)) {
+                return $user;
+            }
+
+            // Fallback A: salt prepended before key in plain sha256.
+            //   stored = {salt}{sha256(salt . hash_key . password)}
+            if (hash_equals($salt . hash('sha256', $salt . $hashKey . $password), $stored)) {
+                return $user;
+            }
+
+            // Fallback B: key prepended before salt in plain sha256.
+            //   stored = {salt}{sha256(hash_key . salt . password)}
+            if (hash_equals($salt . hash('sha256', $hashKey . $salt . $password), $stored)) {
+                return $user;
+            }
+        }
+
+        // Fallback: no-salt HMAC — hmac_sha256(password, hash_key)
+        if (strlen($stored) === 64 && hash_equals(hash_hmac('sha256', $password, $hashKey), $stored)) {
             return $user;
         }
 
-        // Fallback: plain sha256 (no pepper) for legacy users
-        $hashedPlain = hash('sha256', $password);
-        if ($hashedPlain !== $hashed) {
-            $user = $db->table('users')
-                       ->where('username', $username)
-                       ->where('password', $hashedPlain)
-                       ->where('is_active', 1)
-                       ->get()->getRow();
-            if ($user) {
-                return $user;
-            }
+        // Fallback: no-salt peppered hash — sha256(hash_key . password)
+        if (strlen($stored) === 64 && hash_equals(hash('sha256', $hashKey . $password), $stored)) {
+            return $user;
+        }
+
+        // Fallback: plain sha256 (no pepper, no salt) for legacy users
+        if (strlen($stored) === 64 && hash_equals(hash('sha256', $password), $stored)) {
+            return $user;
         }
 
         return false;
