@@ -1,0 +1,31 @@
+--- a/system/Images/Handlers/ImageMagickHandler.php	2026-04-14 07:32:33.070716089 +0000
++++ b/system/Images/Handlers/ImageMagickHandler.php	2026-04-14 07:32:48.319605832 +0000
+@@ -46,7 +46,7 @@
+             throw ImageException::forMissingExtension('IMAGICK'); // @codeCoverageIgnore
+         }
+ 
+-        $cmd = $this->config->libraryPath;
++        $cmd = escapeshellcmd($this->config->libraryPath);
+ 
+         if ($cmd === '') {
+             throw ImageException::forInvalidImageLibraryPath($cmd);
+@@ -82,8 +82,8 @@
+         }
+ 
+         $action = $maintainRatio
+-            ? ' -resize ' . ($this->width ?? 0) . 'x' . ($this->height ?? 0) . ' "' . $source . '" "' . $destination . '"'
+-            : ' -resize ' . ($this->width ?? 0) . 'x' . ($this->height ?? 0) . "{$escape}! \"" . $source . '" "' . $destination . '"';
++            ? ' -resize ' . ($this->width ?? 0) . 'x' . ($this->height ?? 0) . ' ' . escapeshellarg($source) . ' ' . escapeshellarg($destination)
++            : ' -resize ' . ($this->width ?? 0) . 'x' . ($this->height ?? 0) . "{$escape}! " . escapeshellarg($source) . ' ' . escapeshellarg($destination);
+ 
+         $this->process($action);
+ 
+@@ -414,7 +414,7 @@
+         $source      = ! empty($this->resource) ? $this->resource : $this->image()->getPathname();
+         $destination = $this->getResourcePath();
+ 
+-        $cmd = " '{$source}' {$cmd} '{$destination}'";
++        $cmd = ' ' . escapeshellarg($source) . ' ' . $cmd . ' ' . escapeshellarg($destination);
+ 
+         $this->process($cmd);
+     }
