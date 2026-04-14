@@ -105,16 +105,34 @@ class Auth extends BaseController
 
         $stored = $user->password ?? '';
 
-        // Kohana Auth salted hash (used by drams/aies):
-        //   stored = {salt}{sha256(hash_key . salt . password)}
-        //   salt length = len(stored) - 64  (sha256 hex is always 64 chars)
+        // Kohana Auth salted hash — sha256 hex output is always 64 chars,
+        // so any stored value longer than 64 chars contains a leading salt.
         if (strlen($stored) > 64) {
             $saltSize = strlen($stored) - 64;
             $salt     = substr($stored, 0, $saltSize);
-            $expected = $salt . hash('sha256', $hashKey . $salt . $password);
-            if (hash_equals($expected, $stored)) {
+
+            // Primary: standard Kohana Auth ORM driver uses hash_hmac.
+            //   stored = {salt}{hmac_sha256(salt.password, hash_key)}
+            if (hash_equals($salt . hash_hmac('sha256', $salt . $password, $hashKey), $stored)) {
                 return $user;
             }
+
+            // Fallback A: salt prepended before key in plain sha256.
+            //   stored = {salt}{sha256(salt . hash_key . password)}
+            if (hash_equals($salt . hash('sha256', $salt . $hashKey . $password), $stored)) {
+                return $user;
+            }
+
+            // Fallback B: key prepended before salt in plain sha256.
+            //   stored = {salt}{sha256(hash_key . salt . password)}
+            if (hash_equals($salt . hash('sha256', $hashKey . $salt . $password), $stored)) {
+                return $user;
+            }
+        }
+
+        // Fallback: no-salt HMAC — hmac_sha256(password, hash_key)
+        if (strlen($stored) === 64 && hash_equals(hash_hmac('sha256', $password, $hashKey), $stored)) {
+            return $user;
         }
 
         // Fallback: no-salt peppered hash — sha256(hash_key . password)
