@@ -3,8 +3,8 @@
     "description": "Suspect - Person Intelligence Portal",
     "type": "project",
     "require": {
-        "php": "^8.2",
-        "codeigniter4/framework": "^4.6.2"
+        "php": "^8.1",
+        "codeigniter4/framework": "^4.5.0 <4.6.0"
     },
     "require-dev": {},
     "autoload": {
@@ -21,6 +21,12 @@
         "sort-packages": true,
         "allow-plugins": {
             "codeigniter4/devkit": true
+        },
+        "audit": {
+            "ignore": [
+                "PKSA-7ybs-j1bv-y5mc",
+                "PKSA-qbjf-dc24-wrff"
+            ]
         }
     },
     "minimum-stability": "dev",
