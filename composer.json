@@ -4,7 +4,8 @@
     "type": "project",
     "require": {
         "php": "^8.1",
-        "codeigniter4/framework": "^4.5.0 <4.6.0"
+        "codeigniter4/framework": "^4.5.0 <4.6.0",
+        "cweagans/composer-patches": "^1.7"
     },
     "require-dev": {},
     "autoload": {
@@ -20,13 +21,22 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
-            "codeigniter4/devkit": true
+            "codeigniter4/devkit": true,
+            "cweagans/composer-patches": true
         },
         "audit": {
             "ignore": [
                 "PKSA-7ybs-j1bv-y5mc",
                 "PKSA-qbjf-dc24-wrff"
             ]
+        }
+    },
+    "extra": {
+        "composer-exit-on-patch-failure": true,
+        "patches": {
+            "codeigniter4/framework": {
+                "CVE: ImageMagick handler command injection (backport from 4.6.2)": "patches/imagick-handler-command-injection.patch"
+            }
         }
     },
     "minimum-stability": "dev",
