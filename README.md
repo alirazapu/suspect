@@ -48,6 +48,7 @@ chmod -R 777 application/logs application/cache
 | `DB_PASSWORD`       | *(empty)*                   | MySQL password                            |
 | `DB_DATABASE`       | `aiesplus`                  | MySQL database name                       |
 | `SSO_SECRET`        | *(empty)*                   | Shared secret for SSO token validation    |
+| `DRAMS_HASH_KEY`    | *(empty)*                   | Must match dramslive `auth.php` `hash_key` (for local login) |
 | `CI_ENCRYPTION_KEY` | `suspect-default-key-...`   | CodeIgniter session encryption key        |
 | `CI_ENV`            | `production`                | CI environment (`development`/`production`) |
 
