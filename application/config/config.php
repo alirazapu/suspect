@@ -23,7 +23,16 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-$config['base_url'] = '';
+/*
+ * Base URL is set dynamically based on HTTP_HOST so the same codebase
+ * works on both production (ctd.suspect.kpk) and dev (devctd.suspect.kpk).
+ */
+if ( ! empty($_SERVER['HTTP_HOST'])) {
+    $protocol = ( ! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $config['base_url'] = $protocol . '://' . $_SERVER['HTTP_HOST'] . '/';
+} else {
+    $config['base_url'] = 'http://localhost/';
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +44,7 @@ $config['base_url'] = '';
 | variable so that it is blank.
 |
 */
-$config['index_page'] = 'index.php';
+$config['index_page'] = '';
 
 /*
 |--------------------------------------------------------------------------
@@ -100,7 +109,7 @@ $config['charset'] = 'UTF-8';
 | setting this variable to TRUE (boolean).  See the user guide for details.
 |
 */
-$config['enable_hooks'] = FALSE;
+$config['enable_hooks'] = TRUE;
 
 /*
 |--------------------------------------------------------------------------

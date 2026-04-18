@@ -73,24 +73,72 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 $active_group = 'default';
 $query_builder = TRUE;
 
-$db['default'] = array(
-	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => '',
-	'password' => '',
-	'database' => '',
-	'dbdriver' => 'mysqli',
-	'dbprefix' => '',
-	'pconnect' => FALSE,
-	'db_debug' => (ENVIRONMENT !== 'production'),
-	'cache_on' => FALSE,
-	'cachedir' => '',
-	'char_set' => 'utf8',
-	'dbcollat' => 'utf8_general_ci',
-	'swap_pre' => '',
-	'encrypt' => FALSE,
-	'compress' => FALSE,
-	'stricton' => FALSE,
-	'failover' => array(),
-	'save_queries' => TRUE
-);
+/*
+| -------------------------------------------------------------------------
+| Host-based environment switching
+| -------------------------------------------------------------------------
+| Production : ctd.suspect.kpk
+| Development: devctd.suspect.kpk  (or any other host, incl. localhost)
+|
+| Both environments share the same database as dramslive. Set the
+| appropriate credentials for each environment below.
+|
+| SECURITY NOTE: Do NOT commit real passwords to version control.
+|   Recommended: replace the placeholder strings below with getenv() calls,
+|   e.g.  'username' => getenv('DB_USER'),
+|   and set the corresponding environment variables on the server
+|   (via .env file loaded by Apache/PHP-FPM, or server vhost config).
+*/
+$http_host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+
+if ($http_host === 'ctd.suspect.kpk') {
+    // ------------------------------------------------------------------
+    // PRODUCTION environment — ctd.suspect.kpk
+    // ------------------------------------------------------------------
+    $db['default'] = array(
+        'dsn'         => '',
+        'hostname'    => 'localhost',          // <-- production DB host
+        'username'    => 'YOUR_PROD_DB_USER',  // <-- production DB user
+        'password'    => 'YOUR_PROD_DB_PASS',  // <-- production DB password
+        'database'    => 'YOUR_PROD_DB_NAME',  // <-- shared dramslive DB name
+        'dbdriver'    => 'mysqli',
+        'dbprefix'    => '',
+        'pconnect'    => FALSE,
+        'db_debug'    => FALSE,
+        'cache_on'    => FALSE,
+        'cachedir'    => '',
+        'char_set'    => 'utf8',
+        'dbcollat'    => 'utf8_general_ci',
+        'swap_pre'    => '',
+        'encrypt'     => FALSE,
+        'compress'    => FALSE,
+        'stricton'    => FALSE,
+        'failover'    => array(),
+        'save_queries'=> FALSE,
+    );
+} else {
+    // ------------------------------------------------------------------
+    // DEVELOPMENT environment — devctd.suspect.kpk (or localhost)
+    // ------------------------------------------------------------------
+    $db['default'] = array(
+        'dsn'         => '',
+        'hostname'    => 'localhost',         // <-- dev DB host
+        'username'    => 'YOUR_DEV_DB_USER',  // <-- dev DB user
+        'password'    => 'YOUR_DEV_DB_PASS',  // <-- dev DB password
+        'database'    => 'YOUR_DEV_DB_NAME',  // <-- shared dramslive DB name
+        'dbdriver'    => 'mysqli',
+        'dbprefix'    => '',
+        'pconnect'    => FALSE,
+        'db_debug'    => TRUE,
+        'cache_on'    => FALSE,
+        'cachedir'    => '',
+        'char_set'    => 'utf8',
+        'dbcollat'    => 'utf8_general_ci',
+        'swap_pre'    => '',
+        'encrypt'     => FALSE,
+        'compress'    => FALSE,
+        'stricton'    => FALSE,
+        'failover'    => array(),
+        'save_queries'=> TRUE,
+    );
+}
