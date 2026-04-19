@@ -14,9 +14,13 @@ user_guide_src/cilexer/dist/*
 user_guide_src/cilexer/pycilexer.egg-info/*
 /vendor/
 
+# Database config (contains credentials — set locally, do not commit)
+application/config/database.php
+
 # IDE Files
 #-------------------------
 /nbproject/
+.idea
 .idea/*
 
 ## Sublime Text cache files

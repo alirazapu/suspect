@@ -12,7 +12,7 @@ class Welcome extends CI_Controller
     {
         $data = array('page_title' => 'Dashboard');
         $this->load->view('layout/header', $data);
-        $this->load->view('welcome_message', $data);
+        $this->load->view('dashboard', $data);
         $this->load->view('layout/footer', $data);
     }
 }
