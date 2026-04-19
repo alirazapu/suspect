@@ -98,8 +98,8 @@ if ($http_host === 'ctd.suspect.kpk') {
     $db['default'] = array(
         'dsn'         => '',
         'hostname'    => 'localhost',          // <-- production DB host
-        'username'    => 'YOUR_PROD_DB_USER',  // <-- production DB user
-        'password'    => 'YOUR_PROD_DB_PASS',  // <-- production DB password
+        'username'    => 'root',
+        'password'    => '',
         'database'    => 'aiesplus',              // shared dramslive DB name
         'dbdriver'    => 'mysqli',
         'dbprefix'    => '',
@@ -123,8 +123,8 @@ if ($http_host === 'ctd.suspect.kpk') {
     $db['default'] = array(
         'dsn'         => '',
         'hostname'    => 'localhost',         // <-- dev DB host
-        'username'    => 'YOUR_DEV_DB_USER',  // <-- dev DB user
-        'password'    => 'YOUR_DEV_DB_PASS',  // <-- dev DB password
+        'username'    => 'root',
+        'password'    => '',
         'database'    => 'aiesplus',             // shared dramslive DB name
         'dbdriver'    => 'mysqli',
         'dbprefix'    => '',
