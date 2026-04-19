@@ -22,6 +22,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 */
 $config['pid_key'] = getenv('SUSPECT_PID_KEY') ?: '';
 
+// Warn when running in production without a proper encryption key
+if (empty($config['pid_key']) && defined('ENVIRONMENT') && ENVIRONMENT !== 'development') {
+    log_message('error', 'suspects.php: SUSPECT_PID_KEY environment variable is not set. Person ID encryption will fail in production.');
+}
+
 /*
 | ---------------------------------------------------------------------------
 | SSO / Token configuration

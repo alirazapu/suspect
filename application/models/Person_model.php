@@ -110,13 +110,14 @@ class Person_model extends CI_Model
         if ( ! empty($filters['cnic']))
             $this->db->like('p.cnic', $filters['cnic']);
 
+        // Default select — overridden to DISTINCT when a join adds duplicate rows
+        $this->db->select('p.*');
+
         if ( ! empty($filters['mobile'])) {
-            // Join mobiles table for mobile number search
+            // Join mobiles table for mobile number search; use DISTINCT to avoid duplicates
             $this->db->join(self::T_PERSON_MOBILES . ' mob', 'mob.person_id = p.id', 'left');
             $this->db->like('mob.mobile_number', $filters['mobile']);
             $this->db->select('DISTINCT p.*');
-        } else {
-            $this->db->select('p.*');
         }
 
         if ( ! empty($filters['affiliation'])) {
@@ -305,12 +306,17 @@ class Person_model extends CI_Model
 
         $key = $this->config->item('pid_key', 'suspects');
 
-        // Fallback: if no key configured, treat the value as a plain integer
-        // (useful during development before the dramslive key is set up)
+        // Fallback: if no key configured, only allow plain base64 in development.
+        // In production (ENVIRONMENT !== 'development') refuse to decode without a key.
         if (empty($key)) {
-            $plain = base64_decode(strtr($encrypted_id, '-_', '+/'));
-            if ($plain !== FALSE && ctype_digit(trim($plain))) {
-                return (int) trim($plain);
+            if (ENVIRONMENT === 'development') {
+                log_message('error', 'Person_model: SUSPECT_PID_KEY is not set. Using insecure base64 fallback (development only).');
+                $plain = base64_decode(strtr($encrypted_id, '-_', '+/'));
+                if ($plain !== FALSE && ctype_digit(trim($plain))) {
+                    return (int) trim($plain);
+                }
+            } else {
+                log_message('error', 'Person_model: SUSPECT_PID_KEY is not configured. Cannot decrypt person ID in production.');
             }
             return FALSE;
         }
@@ -354,8 +360,14 @@ class Person_model extends CI_Model
         $key = $this->config->item('pid_key', 'suspects');
 
         if (empty($key)) {
-            // Fallback: simple base64 (development only)
-            return rtrim(strtr(base64_encode((string) $person_id), '+/', '-_'), '=');
+            if (ENVIRONMENT === 'development') {
+                // Development fallback: simple base64 (insecure — set SUSPECT_PID_KEY for production)
+                log_message('error', 'Person_model: SUSPECT_PID_KEY is not set. Using insecure base64 fallback (development only).');
+                return rtrim(strtr(base64_encode((string) $person_id), '+/', '-_'), '=');
+            }
+            // Production without a key: return an empty string to avoid exposing raw IDs
+            log_message('error', 'Person_model: SUSPECT_PID_KEY is not configured. Cannot encrypt person ID in production.');
+            return '';
         }
 
         $iv     = random_bytes(16);
