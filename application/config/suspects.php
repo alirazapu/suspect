@@ -29,6 +29,26 @@ if (empty($config['pid_key']) && defined('ENVIRONMENT') && ENVIRONMENT !== 'deve
 
 /*
 | ---------------------------------------------------------------------------
+| Password hashing — dramslive compatibility
+| ---------------------------------------------------------------------------
+|
+| auth_hash_key
+| -------------
+| The HMAC key used by dramslive's Kohana Auth module to hash passwords.
+| This MUST match the `hash_key` value in the dramslive project's
+| `application/config/auth.php` so that passwords hashed by dramslive can
+| be verified here.
+|
+| Set this via an environment variable in your web-server vhost config:
+|   SetEnv SUSPECT_AUTH_HASH_KEY "your-hmac-key-here"
+|
+| The default below matches the value shipped in dramslive's auth config.
+|
+*/
+$config['auth_hash_key'] = getenv('SUSPECT_AUTH_HASH_KEY') ?: 'Never gonna give you up';
+
+/*
+| ---------------------------------------------------------------------------
 | SSO / Token configuration
 | ---------------------------------------------------------------------------
 |
