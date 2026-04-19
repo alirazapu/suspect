@@ -97,7 +97,8 @@ class User_model extends CI_Model
             ->where('id', (int) $user_id)
             ->update(self::USERS_TABLE, array('password' => $new_hash));
     }
-     *
+
+    /**
      * Supports bcrypt (password_hash), SHA-1, and MD5 to stay compatible
      * with all dramslive password formats.
      *
