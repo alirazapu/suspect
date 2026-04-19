@@ -56,3 +56,29 @@ $route['translate_uri_dashes'] = FALSE;
 // Auth routes
 $route['login']  = 'auth/login';
 $route['logout'] = 'auth/logout';
+
+// Persons listing
+$route['persons']           = 'persons/index';
+$route['persons/index']     = 'persons/index';
+$route['persons/profile']   = 'persons/profile';
+
+// Person Profile — mirrors dramslive URL structure
+// /personprofile/person_profile?id=<encrypted_id>
+$route['personprofile/person_profile'] = 'personprofile/person_profile';
+
+// API routes — /api/persons/:id/<tab>
+$route['api/persons/search']                    = 'api/persons_search';
+$route['api/persons/(:num)/basic']              = 'api/persons_basic/$1';
+$route['api/persons/(:num)/detailed']           = 'api/persons_detailed/$1';
+$route['api/persons/(:num)/identities']         = 'api/persons_identities/$1';
+$route['api/persons/(:num)/education']          = 'api/persons_education/$1';
+$route['api/persons/(:num)/income']             = 'api/persons_income/$1';
+$route['api/persons/(:num)/banks']              = 'api/persons_banks/$1';
+$route['api/persons/(:num)/assets']             = 'api/persons_assets/$1';
+$route['api/persons/(:num)/mobiles']            = 'api/persons_mobiles/$1';
+$route['api/persons/(:num)/relations']          = 'api/persons_relations/$1';
+$route['api/persons/(:num)/criminal']           = 'api/persons_criminal/$1';
+$route['api/persons/(:num)/affiliations']       = 'api/persons_affiliations/$1';
+$route['api/persons/(:num)/projects']           = 'api/persons_projects/$1';
+$route['api/persons/(:num)/category_history']   = 'api/persons_category_history/$1';
+$route['api/persons/(:num)/reports']            = 'api/persons_reports/$1';

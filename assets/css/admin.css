@@ -1,0 +1,357 @@
+/*
+ * Suspect Admin Theme
+ * Professional dashboard CSS for the Suspect Person Intelligence Portal.
+ * Inspired by AdminLTE / ColorLib admin templates.
+ *
+ * Production note: replace CDN vendor links in layout/header.php with
+ * locally downloaded Bootstrap 4 & FontAwesome 5 files under assets/vendor/.
+ */
+
+/* =========================================================
+   Bootstrap / vendor fallback CDN via @import
+   Remove these @import lines once local vendor files exist.
+   ========================================================= */
+@import url('https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+/* =========================================================
+   Root variables
+   ========================================================= */
+:root {
+    --sidebar-bg:      #1e2a38;
+    --sidebar-hover:   #2c3e50;
+    --sidebar-active:  #3498db;
+    --sidebar-text:    #b8c7ce;
+    --navbar-bg:       #2c3e50;
+    --content-bg:      #f4f6f9;
+    --card-shadow:     0 2px 8px rgba(0,0,0,.12);
+    --primary:         #3498db;
+    --primary-dark:    #2980b9;
+    --danger:          #e74c3c;
+    --success:         #27ae60;
+    --warning:         #f39c12;
+    --sidebar-width:   240px;
+    --navbar-height:   56px;
+}
+
+/* =========================================================
+   Reset & base
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+
+body.admin-body {
+    margin: 0;
+    padding: 0;
+    background: var(--content-bg);
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+}
+
+/* =========================================================
+   Wrapper / layout skeleton
+   ========================================================= */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.admin-container {
+    display: flex;
+    flex: 1;
+    padding-top: var(--navbar-height);
+}
+
+/* =========================================================
+   Top navigation bar
+   ========================================================= */
+.admin-navbar {
+    background: var(--navbar-bg);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    height: var(--navbar-height);
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+
+.admin-navbar .navbar-brand {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff !important;
+}
+
+.admin-navbar .nav-link {
+    color: rgba(255,255,255,.8) !important;
+    font-size: 0.9rem;
+}
+.admin-navbar .nav-link:hover { color: #fff !important; }
+
+/* =========================================================
+   Sidebar
+   ========================================================= */
+.admin-sidebar {
+    width: var(--sidebar-width);
+    min-height: calc(100vh - var(--navbar-height));
+    background: var(--sidebar-bg);
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 1020;
+}
+
+.sidebar-header {
+    padding: 1.2rem 1rem .8rem;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-menu li a {
+    display: block;
+    padding: .75rem 1.25rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: .9rem;
+    transition: background .15s, color .15s;
+}
+
+.sidebar-menu li a:hover {
+    background: var(--sidebar-hover);
+    color: #fff;
+}
+
+.sidebar-menu li.active > a {
+    background: var(--sidebar-active);
+    color: #fff;
+}
+
+.sidebar-menu li a i {
+    width: 20px;
+    margin-right: 8px;
+    text-align: center;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: rgba(255,255,255,.06);
+    margin: .5rem 0;
+}
+
+/* =========================================================
+   Main content
+   ========================================================= */
+.admin-content {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    padding: 1.5rem;
+    min-height: calc(100vh - var(--navbar-height));
+}
+
+/* =========================================================
+   Page header / breadcrumb bar
+   ========================================================= */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.page-header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* =========================================================
+   Cards
+   ========================================================= */
+.card {
+    border: none;
+    border-radius: 6px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #e8ecef;
+    font-weight: 600;
+    color: #2c3e50;
+    border-radius: 6px 6px 0 0 !important;
+    padding: .75rem 1.25rem;
+}
+
+.card-body { padding: 1.25rem; }
+
+/* =========================================================
+   Stat / summary cards
+   ========================================================= */
+.stat-card {
+    border-left: 4px solid var(--primary);
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1rem;
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.stat-card .stat-label {
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-top: .25rem;
+}
+
+/* =========================================================
+   Tables
+   ========================================================= */
+.table thead th {
+    background: #f0f4f8;
+    font-weight: 600;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #555;
+    border-top: none;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover { background: #f8fafc; }
+
+.table-responsive { border-radius: 6px; overflow: hidden; }
+
+/* =========================================================
+   Filters / search bar
+   ========================================================= */
+.filter-card .card-body { padding: 1rem 1.25rem; }
+
+.filter-card .form-control,
+.filter-card .custom-select {
+    font-size: .85rem;
+    height: 36px;
+    border-color: #ced4da;
+}
+
+.filter-card .form-control:focus,
+.filter-card .custom-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 .15rem rgba(52,152,219,.2);
+}
+
+/* =========================================================
+   Profile tabs
+   ========================================================= */
+.profile-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: #fff;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0 0 .25rem; }
+.profile-header p  { margin: 0; opacity: .85; font-size: .9rem; }
+
+.nav-tabs { border-bottom: 2px solid #dee2e6; flex-wrap: wrap; }
+
+.nav-tabs .nav-link {
+    color: #555;
+    font-size: .85rem;
+    font-weight: 500;
+    padding: .5rem .9rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    border-radius: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    background: none;
+}
+
+.nav-tabs .nav-link:hover  { color: var(--primary); border-bottom-color: var(--primary); }
+.nav-tabs .nav-link.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+.tab-content { padding-top: 1.25rem; }
+
+.tab-loading {
+    text-align: center;
+    padding: 2.5rem;
+    color: #888;
+}
+
+.tab-loading .spinner-border { width: 2rem; height: 2rem; }
+
+/* =========================================================
+   Badges / labels
+   ========================================================= */
+.badge-sm { font-size: .7rem; padding: .2em .5em; }
+
+/* =========================================================
+   Pagination
+   ========================================================= */
+.pagination .page-link { color: var(--primary); }
+.pagination .page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+.btn-primary   { background: var(--primary);   border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+
+/* =========================================================
+   Alerts / flash messages
+   ========================================================= */
+.alert { border-radius: 6px; font-size: .9rem; }
+
+/* =========================================================
+   Responsive adjustments
+   ========================================================= */
+@media (max-width: 991px) {
+    .admin-sidebar {
+        width: 60px;
+        overflow: visible;
+    }
+    .sidebar-header,
+    .sidebar-menu li a span,
+    .sidebar-menu li a .link-text { display: none; }
+    .admin-content { margin-left: 60px; }
+    .sidebar-menu li a { padding: .75rem; text-align: center; }
+    .sidebar-menu li a i { margin: 0; width: auto; }
+}
+
+@media (max-width: 575px) {
+    .admin-sidebar { display: none; }
+    .admin-content { margin-left: 0; }
+    .admin-content { padding: 1rem .75rem; }
+}
