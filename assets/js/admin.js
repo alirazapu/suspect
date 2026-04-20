@@ -304,6 +304,22 @@
     }
 
     // ----------------------------------------------------------------
+    // Build a hidden inline-form wrapper for a given tab
+    // ----------------------------------------------------------------
+    function _makeFormWrap(tabId, colorClass) {
+        colorClass = colorClass || 'info';
+        return '<div class="tab-inline-form-wrap" data-tab="' + tabId + '" style="display:none">'
+            + '<div class="card border-' + colorClass + ' mb-3">'
+            + '<div class="card-header bg-' + colorClass + ' text-white d-flex justify-content-between align-items-center py-2">'
+            + '<strong class="tab-form-title">Add Record</strong>'
+            + '<button type="button" class="btn btn-sm btn-light btn-inline-cancel" data-tab="' + tabId + '">'
+            + '<i class="fas fa-times mr-1"></i>Cancel</button>'
+            + '</div>'
+            + '<div class="card-body inline-form-body"></div>'
+            + '</div></div>';
+    }
+
+    // ----------------------------------------------------------------
     // Generic AJAX tab loader with add-record button
     // ----------------------------------------------------------------
     function loadTab(tabId, endpoint, render, opts) {
@@ -320,11 +336,12 @@
             dataType: 'json',
             success: function (resp) {
                 if (resp && resp.status === 'ok') {
+                    var formWrap = _makeFormWrap(tabId, 'info');
                     var addBtn = '';
                     if (opts && opts.addBtn) {
                         addBtn = '<div class="mb-2">' + opts.addBtn + '</div>';
                     }
-                    $pane.html(addBtn + render(resp.data));
+                    $pane.html(formWrap + addBtn + render(resp.data));
                 } else {
                     var msg = (resp && resp.message) ? resp.message : 'No data available.';
                     $pane.html('<p class="text-muted p-3">' + escHtml(msg) + '</p>');
@@ -623,6 +640,9 @@
                     var affData   = (affResp[0]   && affResp[0].status   === 'ok') ? affResp[0].data   : [];
                     var trainData = (trainResp[0]  && trainResp[0].status === 'ok') ? trainResp[0].data : [];
 
+                    var formWrapAff   = _makeFormWrap('#tab-affiliations', 'info');
+                    var formWrapTrain = _makeFormWrap('#tab-trainings', 'success');
+
                     var addAffBtn = '<button class="btn btn-sm btn-success btn-add-row mr-2" data-tab="' + target + '">'
                         + '<i class="fas fa-plus mr-1"></i>Add Affiliation</button>';
                     var addTrainBtn = '<button class="btn btn-sm btn-info btn-add-training" data-tab="' + target + '">'
@@ -645,7 +665,7 @@
                         {key: 'training_purpose',  label: 'Purpose'}
                     ], { tab: '#tab-trainings', actions: {edit: true, del: true} });
 
-                    var html = '<div class="mb-2">' + addAffBtn + addTrainBtn + '</div>';
+                    var html = formWrapAff + formWrapTrain + '<div class="mb-2">' + addAffBtn + addTrainBtn + '</div>';
                     html += '<h6 class="mt-3 mb-1 text-secondary">Affiliations</h6>' + affHtml;
                     html += '<h6 class="mt-4 mb-1 text-secondary">Trainings</h6>' + trainHtml;
                     $paneAff.html(html);
@@ -750,55 +770,71 @@
         _openEditModal(tab, {});
     });
 
-    // Add Training button — opens blank training modal, reloads affiliations tab on save
+    // Add Training button — opens blank training inline form inside affiliations pane
     $(document).on('click', '.btn-add-training', function () {
         _openEditModal('#tab-trainings', {});
-        // Patch modal save to reload affiliations tab (which contains both sections)
-        $('#suspectModal').one('hide.bs.modal', function () {
-            delete tabLoaded['#tab-affiliations'];
-            reloadTab('#tab-affiliations');
-        });
     });
 
     function _openEditModal(tab, row) {
         var config = _tabEditConfig(tab);
         if ( ! config) { showToast('warning', 'Edit not supported for this tab yet.'); return; }
 
-        var body = '<form id="editRowForm">';
-        body += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
-        if (row.id) {
-            body += '<input type="hidden" name="id" value="' + escHtml(row.id) + '">';
-        }
-        $.each(config.fields, function (_, f) {
-            var val = escHtml(row[f.name] || '');
-            body += '<div class="form-group row"><label class="col-sm-4 col-form-label">' + escHtml(f.label) + '</label><div class="col-sm-8">';
-            if (f.type === 'textarea') {
-                body += '<textarea class="form-control form-control-sm" name="' + escHtml(f.name) + '" rows="3">' + val + '</textarea>';
-            } else if (f.type === 'select' && f.options) {
-                body += '<select class="form-control form-control-sm" name="' + escHtml(f.name) + '">';
-                body += '<option value="">— Select —</option>';
-                $.each(f.options, function (_, opt) {
-                    var sel = String(row[f.name]) === String(opt.value) ? ' selected' : '';
-                    body += '<option value="' + escHtml(opt.value) + '"' + sel + '>' + escHtml(opt.label) + '</option>';
-                });
-                body += '</select>';
-            } else {
-                body += '<input type="' + (f.type || 'text') + '" class="form-control form-control-sm" name="' + escHtml(f.name) + '" value="' + val + '">';
-            }
-            body += '</div></div>';
-        });
-        body += '</form>';
+        // Training records live inside the affiliations tab pane
+        var paneId     = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+        var reloadTabId = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+        var isEdit     = !! row.id;
 
-        var title = (row.id ? 'Edit ' : 'Add ') + config.label;
-        showModal(title, body, function () {
-            var data = $('#editRowForm').serializeArray().reduce(function (obj, item) {
-                obj[item.name] = item.value;
-                return obj;
-            }, {});
-            // Training records live inside the affiliations tab
-            var reloadTabId = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
-            saveRecord(BASE + 'personprofile/' + config.saveAction, data, reloadTabId);
-            $('#suspectModal').modal('hide');
+        var $wrap = $(paneId).find('.tab-inline-form-wrap[data-tab="' + tab + '"]');
+        if ( ! $wrap.length) return;
+
+        loadLookups(function (lk) {
+            var formHtml = '<form id="inlineEditForm"'
+                + ' data-save-action="' + escHtml(config.saveAction) + '"'
+                + ' data-reload-tab="' + escHtml(reloadTabId) + '">';
+            formHtml += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
+            if (row.id) {
+                formHtml += '<input type="hidden" name="id" value="' + escHtml(row.id) + '">';
+            }
+            formHtml += '<div class="row">';
+            $.each(config.fields, function (_, f) {
+                var val = (row[f.name] !== undefined && row[f.name] !== null) ? row[f.name] : '';
+                var colClass = (f.type === 'textarea') ? 'col-12' : 'col-md-6';
+                formHtml += '<div class="form-group ' + colClass + ' mb-2">';
+                formHtml += '<label class="font-weight-bold small mb-1">' + escHtml(f.label) + '</label>';
+
+                if (f.type === 'textarea') {
+                    formHtml += '<textarea class="form-control form-control-sm" name="' + escHtml(f.name) + '" rows="3">' + escHtml(val) + '</textarea>';
+                } else if (f.type === 'select') {
+                    // Use LOOKUPS data when available, fall back to hardcoded options
+                    var opts = f.options || [];
+                    if (f.lookupKey && lk && lk[f.lookupKey] && lk[f.lookupKey].length) {
+                        opts = $.map(lk[f.lookupKey], function (item) {
+                            return {value: item[f.lookupId], label: item[f.lookupLabel]};
+                        });
+                    }
+                    formHtml += '<select class="form-control form-control-sm" name="' + escHtml(f.name) + '">';
+                    formHtml += '<option value="">— Select —</option>';
+                    $.each(opts, function (_, opt) {
+                        var sel = (String(val) === String(opt.value)) ? ' selected' : '';
+                        formHtml += '<option value="' + escHtml(opt.value) + '"' + sel + '>' + escHtml(opt.label) + '</option>';
+                    });
+                    formHtml += '</select>';
+                } else {
+                    formHtml += '<input type="' + (f.type || 'text') + '" class="form-control form-control-sm" name="'
+                        + escHtml(f.name) + '" value="' + escHtml(val) + '">';
+                }
+                formHtml += '</div>';
+            });
+            formHtml += '</div>';
+            formHtml += '<div class="mt-2">'
+                + '<button type="submit" class="btn btn-primary btn-sm mr-2"><i class="fas fa-save mr-1"></i>Save</button>'
+                + '</div>';
+            formHtml += '</form>';
+
+            $wrap.find('.tab-form-title').text((isEdit ? 'Edit ' : 'Add ') + config.label);
+            $wrap.find('.inline-form-body').html(formHtml);
+            $wrap.slideDown(200);
+            $wrap[0].scrollIntoView({behavior: 'smooth', block: 'start'});
         });
     }
 
@@ -808,11 +844,13 @@
                 label: 'Identity',
                 saveAction: 'update_identity',
                 fields: [
-                    {name: 'identity_id', label: 'Type', type: 'select', options: [
-                        {value: 1, label: 'Armed Licence'}, {value: 2, label: 'Driving Licence'},
-                        {value: 3, label: 'NTN'}, {value: 4, label: 'CNIC'},
-                        {value: 5, label: 'Afghan Refugees Card'}, {value: 6, label: 'Passport'}
-                    ]},
+                    {name: 'identity_id', label: 'Type', type: 'select',
+                        lookupKey: 'identity_types', lookupId: 'id', lookupLabel: 'identity',
+                        options: [
+                            {value: 1, label: 'Armed Licence'}, {value: 2, label: 'Driving Licence'},
+                            {value: 3, label: 'NTN'}, {value: 4, label: 'CNIC'},
+                            {value: 5, label: 'Afghan Refugees Card'}, {value: 6, label: 'Passport'}
+                        ]},
                     {name: 'identity_no', label: 'Number'}
                 ]
             },
@@ -826,12 +864,14 @@
                     {name: 'degree_name',    label: 'Degree'},
                     {name: 'institute_name', label: 'Institution'},
                     {name: 'complete_year',  label: 'Year', type: 'number'},
-                    {name: 'education_level', label: 'Level', type: 'select', options: [
-                        {value: 1, label: 'Primary'}, {value: 2, label: 'Middle'},
-                        {value: 3, label: 'Matric'}, {value: 4, label: 'Intermediate'},
-                        {value: 5, label: 'Bachelor'}, {value: 6, label: 'Master'},
-                        {value: 7, label: 'M.Phil'}, {value: 8, label: 'PhD'}
-                    ]}
+                    {name: 'education_level', label: 'Level', type: 'select',
+                        lookupKey: 'education_levels', lookupId: 'id', lookupLabel: 'education_level',
+                        options: [
+                            {value: 1, label: 'Primary'}, {value: 2, label: 'Middle'},
+                            {value: 3, label: 'Matric'}, {value: 4, label: 'Intermediate'},
+                            {value: 5, label: 'Bachelor'}, {value: 6, label: 'Master'},
+                            {value: 7, label: 'M.Phil'}, {value: 8, label: 'PhD'}
+                        ]}
                 ]
             },
             '#tab-income': {
@@ -850,6 +890,9 @@
                 label: 'Bank Account',
                 saveAction: 'update_banks',
                 fields: [
+                    {name: 'bank_name', label: 'Bank', type: 'select',
+                        lookupKey: 'banks', lookupId: 'id', lookupLabel: 'name',
+                        options: []},
                     {name: 'account_number',     label: 'Account No.'},
                     {name: 'atm_number',         label: 'ATM No.'},
                     {name: 'branch_name',        label: 'Branch'},
@@ -893,17 +936,19 @@
                 saveAction: 'update_relations',
                 fields: [
                     {name: 'relation_with',       label: 'Related Person ID', type: 'number'},
-                    {name: 'person_relation_type', label: 'Relation Type', type: 'select', options: [
-                        {value: 1, label: 'Father'}, {value: 2, label: 'Mother'},
-                        {value: 3, label: 'Brother'}, {value: 4, label: 'Sister'},
-                        {value: 5, label: 'Son'}, {value: 6, label: 'Daughter'},
-                        {value: 7, label: 'Wife'}, {value: 8, label: 'Husband'},
-                        {value: 9, label: 'Uncle'}, {value: 10, label: 'Aunt'},
-                        {value: 11, label: 'Nephew'}, {value: 12, label: 'Niece'},
-                        {value: 13, label: 'Grandfather'}, {value: 14, label: 'Grandmother'},
-                        {value: 15, label: 'Friend'}, {value: 16, label: 'Colleague'},
-                        {value: 17, label: 'Other'}
-                    ]},
+                    {name: 'person_relation_type', label: 'Relation Type', type: 'select',
+                        lookupKey: 'relation_types', lookupId: 'id', lookupLabel: 'relation_name',
+                        options: [
+                            {value: 1, label: 'Father'}, {value: 2, label: 'Mother'},
+                            {value: 3, label: 'Brother'}, {value: 4, label: 'Sister'},
+                            {value: 5, label: 'Son'}, {value: 6, label: 'Daughter'},
+                            {value: 7, label: 'Wife'}, {value: 8, label: 'Husband'},
+                            {value: 9, label: 'Uncle'}, {value: 10, label: 'Aunt'},
+                            {value: 11, label: 'Nephew'}, {value: 12, label: 'Niece'},
+                            {value: 13, label: 'Grandfather'}, {value: 14, label: 'Grandmother'},
+                            {value: 15, label: 'Friend'}, {value: 16, label: 'Colleague'},
+                            {value: 17, label: 'Other'}
+                        ]},
                     {name: 'under_custodian', label: 'Under Custody', type: 'select', options: [
                         {value: 0, label: 'No'}, {value: 1, label: 'Yes'}
                     ]}
@@ -1027,6 +1072,24 @@
             obj[item.name] = item.value; return obj;
         }, {});
         saveRecord(BASE + 'personprofile/update_detail_info', data, '#tab-detailed', 'Detail info updated.');
+    });
+
+    // Inline form save (tab child-record tabs)
+    $(document).on('submit', '#inlineEditForm', function (e) {
+        e.preventDefault();
+        var $form      = $(this);
+        var saveAction = $form.data('save-action');
+        var reloadTabId = $form.data('reload-tab');
+        var data = $form.serializeArray().reduce(function (obj, item) {
+            obj[item.name] = item.value; return obj;
+        }, {});
+        $form.closest('.tab-inline-form-wrap').slideUp(200);
+        saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId);
+    });
+
+    // Cancel button on any inline form
+    $(document).on('click', '.btn-inline-cancel', function () {
+        $(this).closest('.tab-inline-form-wrap').slideUp(200);
     });
 
     // ================================================================
