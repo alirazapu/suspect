@@ -85,10 +85,17 @@
     }
 
     function renderDetailReadOnly(d) {
-        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        var btnLabel = d
+            ? '<i class="fas fa-edit mr-1"></i>Edit'
+            : '<i class="fas fa-plus mr-1"></i>Add Details';
+        var btnClass = d ? 'btn-outline-primary' : 'btn-success';
         var html = '<div class="d-flex justify-content-end mb-2">'
-            + '<button type="button" class="btn btn-sm btn-outline-primary" id="btnEditDetail">'
-            + '<i class="fas fa-edit mr-1"></i>Edit</button></div>';
+            + '<button type="button" class="btn btn-sm ' + btnClass + '" id="btnEditDetail">'
+            + btnLabel + '</button></div>';
+        if ( ! d) {
+            html += '<p class="text-muted p-3">No details recorded yet. Click <strong>Add Details</strong> to enter information.</p>';
+            return html;
+        }
         html += kvTable(d, {
             alias:           'Alias',
             dob:             'Date of Birth',
@@ -209,7 +216,7 @@
     // Build DETAILED INFO editable form
     // ----------------------------------------------------------------
     function buildDetailedInfoForm(d, lk) {
-        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        d  = d  || {};   // allow adding details when no row exists yet
         lk = lk || {};
 
         var genderOpts = '<option value="">— Select —</option>'
