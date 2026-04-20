@@ -48,9 +48,9 @@
                     <label class="small font-weight-bold text-muted mb-1">Gender</label>
                     <select name="gender" class="custom-select custom-select-sm">
                         <option value="">All Genders</option>
-                        <option value="1" <?php echo ($filters['gender'] == '1') ? 'selected' : ''; ?>>Male</option>
-                        <option value="2" <?php echo ($filters['gender'] == '2') ? 'selected' : ''; ?>>Female</option>
-                        <option value="3" <?php echo ($filters['gender'] == '3') ? 'selected' : ''; ?>>Other</option>
+                        <option value="1" <?php echo ($filters['gender'] === '1') ? 'selected' : ''; ?>>Male</option>
+                        <option value="2" <?php echo ($filters['gender'] === '2') ? 'selected' : ''; ?>>Female</option>
+                        <option value="3" <?php echo ($filters['gender'] === '3') ? 'selected' : ''; ?>>Other</option>
                     </select>
                 </div>
 
