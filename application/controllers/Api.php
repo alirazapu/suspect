@@ -144,6 +144,13 @@ class Api extends CI_Controller
         $this->_ok($this->Person_model->get_affiliations($pid));
     }
 
+    public function persons_trainings($person_id = NULL)
+    {
+        $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
+        if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
+        $this->_ok($this->Person_model->get_trainings($pid));
+    }
+
     public function persons_projects($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
