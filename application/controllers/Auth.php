@@ -106,10 +106,6 @@ class Auth extends CI_Controller
             preg_match('#/login/?(\?.*)?$#i', $url)
         );
 
-        // Flush session to disk before redirecting so it is available on the
-        // next request immediately after the Location header is followed.
-        session_write_close();
-
         if ( ! empty($url) && ! $is_login_url) {
             log_message('debug', 'Auth::_redirect_after_login – redirecting to stored URL: ' . $url);
             redirect($url);

@@ -91,6 +91,26 @@ switch (ENVIRONMENT)
 
 /*
  *---------------------------------------------------------------
+ * SESSION ID FORMAT (PHP 7.1+ compatibility)
+ *---------------------------------------------------------------
+ *
+ * CI3's Session library builds a session-ID validation regexp from
+ * session.sid_bits_per_character.  The regexp is only populated when
+ * bits_per_character is 4, 5, or 6.  On PHP 7.1+ the default is 5
+ * with session.sid_length = 26.  CI3 requires at least 40 characters
+ * in the ID, so a 26-char ID fails the {40,} quantifier and CI3
+ * rejects every existing session cookie — effectively logging users
+ * out on every request after login.
+ *
+ * Forcing bits_per_character to 4 here causes CI3's _configure() to
+ * also force session.sid_length to 40 and use the '[0-9a-f]{40,}'
+ * pattern, producing valid 40-character hex session IDs that pass
+ * CI3's own validation across all PHP 7.1+ versions.
+ */
+	ini_set('session.sid_bits_per_character', 4);
+
+/*
+ *---------------------------------------------------------------
  * SYSTEM DIRECTORY NAME
  *---------------------------------------------------------------
  *
