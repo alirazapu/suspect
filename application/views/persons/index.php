@@ -48,8 +48,9 @@
                     <label class="small font-weight-bold text-muted mb-1">Gender</label>
                     <select name="gender" class="custom-select custom-select-sm">
                         <option value="">All Genders</option>
-                        <option value="Male"   <?php echo ($filters['gender'] === 'Male')   ? 'selected' : ''; ?>>Male</option>
-                        <option value="Female" <?php echo ($filters['gender'] === 'Female') ? 'selected' : ''; ?>>Female</option>
+                        <option value="1" <?php echo ($filters['gender'] == '1') ? 'selected' : ''; ?>>Male</option>
+                        <option value="2" <?php echo ($filters['gender'] == '2') ? 'selected' : ''; ?>>Female</option>
+                        <option value="3" <?php echo ($filters['gender'] == '3') ? 'selected' : ''; ?>>Other</option>
                     </select>
                 </div>
 
@@ -78,9 +79,9 @@
                     <select name="category" class="custom-select custom-select-sm">
                         <option value="">All Categories</option>
                         <?php foreach ($categories as $cat): ?>
-                            <option value="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>"
-                                <?php echo ($filters['category'] === $cat) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>
+                            <option value="<?php echo (int) $cat['id']; ?>"
+                                <?php echo ($filters['category'] == $cat['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($cat['label'], ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

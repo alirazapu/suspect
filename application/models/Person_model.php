@@ -97,19 +97,24 @@ class Person_model extends CI_Model
      */
     private function _apply_filters(array $filters)
     {
-        // Base select: core person columns + computed full name
+        // Base select: core person columns + computed full name + province/district names
         $this->db->select(
             "p.person_id, p.first_name, p.last_name, p.middle_name, p.father_name,
              p.address, p.district_id, p.region_id, p.image_url, p.is_complete,
              CONCAT(COALESCE(p.first_name,''),' ',COALESCE(p.middle_name,''),' ',COALESCE(p.last_name,'')) AS name,
              pi.cnic_number AS cnic,
              pdi.gender,
+             r.name AS province,
+             d.name AS district,
              (SELECT pc2.category_id FROM person_category pc2 WHERE pc2.person_id = p.person_id ORDER BY pc2.added_on DESC LIMIT 1) AS category_id"
         );
-        $this->db->join(self::T_PERSON_INITIATE . ' pi', 'pi.person_id = p.person_id', 'left');
-        $this->db->join(self::T_PERSON_DETAIL   . ' pdi', 'pdi.person_id = p.person_id', 'left');
+        $this->db->join(self::T_PERSON_INITIATE . ' pi',  'pi.person_id = p.person_id',   'left');
+        $this->db->join(self::T_PERSON_DETAIL   . ' pdi', 'pdi.person_id = p.person_id',  'left');
+        $this->db->join(self::T_REGION          . ' r',   'r.region_id = p.region_id',    'left');
+        $this->db->join(self::T_DISTRICT        . ' d',   'd.district_id = p.district_id','left');
         $this->db->where('p.is_deleted', 0);
 
+        // Name / father-name quick search
         if ( ! empty($filters['q'])) {
             $q = trim($filters['q']);
             $this->db->group_start()
@@ -120,17 +125,54 @@ class Person_model extends CI_Model
                      ->group_end();
         }
 
-        if ( ! empty($filters['mobile'])) {
-            $this->db->join(self::T_PERSON_MOBILES . ' mob', 'mob.person_id = p.person_id', 'left');
-            $this->db->like('mob.phone_number', $filters['mobile']);
+        // Gender — stored as integer (1=Male 2=Female 3=Other)
+        if ( ! empty($filters['gender'])) {
+            $this->db->where('pdi.gender', (int) $filters['gender']);
         }
 
+        // Province — matched against region name
+        if ( ! empty($filters['province'])) {
+            $this->db->like('r.name', $filters['province'], 'both');
+        }
+
+        // District — matched against district name
+        if ( ! empty($filters['district'])) {
+            $this->db->like('d.name', $filters['district'], 'both');
+        }
+
+        // Category — filter on the aliased correlated-subquery result via HAVING
+        if (isset($filters['category']) && $filters['category'] !== '') {
+            $this->db->having('category_id', (int) $filters['category']);
+        }
+
+        // CNIC
         if ( ! empty($filters['cnic'])) {
             $this->db->like('pi.cnic_number', $filters['cnic']);
         }
 
+        // Mobile number — join phone table only when filter is active
+        if ( ! empty($filters['mobile'])) {
+            $this->db->join(self::T_PERSON_MOBILES . ' mob', 'mob.person_id = p.person_id', 'inner');
+            $this->db->like('mob.phone_number', $filters['mobile']);
+        }
+
+        // Affiliation — INNER join so only persons with at least one affiliation are returned
         if ( ! empty($filters['affiliation'])) {
-            $this->db->join(self::T_PERSON_AFFILIATIONS . ' aff', 'aff.person_id = p.person_id', 'left');
+            $this->db->join(self::T_PERSON_AFFILIATIONS . ' aff', 'aff.person_id = p.person_id', 'inner');
+        }
+
+        // Date range — based on the date the person's most-recent category was assigned
+        if ( ! empty($filters['from_date'])) {
+            $this->db->where(
+                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) >=",
+                $filters['from_date'], FALSE
+            );
+        }
+        if ( ! empty($filters['to_date'])) {
+            $this->db->where(
+                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) <=",
+                $filters['to_date'], FALSE
+            );
         }
     }
 
