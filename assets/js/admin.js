@@ -28,7 +28,8 @@
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     // ----------------------------------------------------------------
@@ -507,7 +508,7 @@
     $(document).on('click', '.btn-edit-row', function () {
         var $btn = $(this);
         var tab  = $btn.data('tab');
-        var row  = JSON.parse($btn.closest('button').attr('data-row') || $btn.data('row'));
+        var row  = JSON.parse($btn.attr('data-row') || '{}');
         _openEditModal(tab, row);
     });
 

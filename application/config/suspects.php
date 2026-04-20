@@ -9,9 +9,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | Person ID encryption
 | ---------------------
 | Person IDs in URLs are encrypted using the same AES-256-CBC scheme as
-| the dramslive project (Helpers_Utilities::encrypted_key).  The keys are
-| compiled into Person_model::decrypt_person_id() / encrypt_person_id()
-| and do NOT need to be set via environment variable.
+| the dramslive project (Helpers_Utilities::encrypted_key).  The passphrase
+| and IV seed default to the values used by dramslive but can be overridden
+| via environment variables without changing source code:
+|
+|   SetEnv SUSPECT_PID_SECRET_KEY "Irfan love CTD"
+|   SetEnv SUSPECT_PID_SECRET_IV  "SEStoPakistan"
+|
+| Only change these if the matching values in dramslive are also changed.
 |
 */
 

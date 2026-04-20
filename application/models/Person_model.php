@@ -1026,23 +1026,23 @@ class Person_model extends CI_Model
     // Person ID encryption / decryption — matches dramslive exactly
     //
     // dramslive Helpers_Utilities::encrypted_key($uID, 'encrypt'):
-    //   $key = hash('sha256', 'Irfan love CTD');
-    //   $iv  = substr(hash('sha256', 'SEStoPakistan'), 0, 16);
+    //   $key = hash('sha256', $secret_key);
+    //   $iv  = substr(hash('sha256', $secret_iv), 0, 16);
     //   $out = openssl_encrypt($uID, 'AES-256-CBC', $key, 0, $iv);
     //   return base64_encode($out);
     //
-    // openssl_encrypt with flags=0 → returns base64-encoded output internally,
-    // then we wrap another base64_encode on top → double base64.
-    //
-    // decrypt($uID):
-    //   openssl_decrypt(base64_decode($uID), 'AES-256-CBC', $key, 0, $iv)
-    //   flags=0 → openssl base64-decodes internally, matching the single inner base64.
+    // The secret_key and secret_iv default to the values shipped in
+    // dramslive's source.  Override via environment variables:
+    //   SUSPECT_PID_SECRET_KEY  (default: 'Irfan love CTD')
+    //   SUSPECT_PID_SECRET_IV   (default: 'SEStoPakistan')
     // ==================================================================
 
     private static function _pid_key_and_iv()
     {
-        $key = hash('sha256', 'Irfan love CTD');
-        $iv  = substr(hash('sha256', 'SEStoPakistan'), 0, 16);
+        $secret_key = getenv('SUSPECT_PID_SECRET_KEY') ?: 'Irfan love CTD';
+        $secret_iv  = getenv('SUSPECT_PID_SECRET_IV')  ?: 'SEStoPakistan';
+        $key = hash('sha256', $secret_key);
+        $iv  = substr(hash('sha256', $secret_iv), 0, 16);
         return array($key, $iv);
     }
 

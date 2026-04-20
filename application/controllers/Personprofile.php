@@ -83,10 +83,8 @@ class Personprofile extends CI_Controller
     private function _get_pid_from_post()
     {
         $raw = $this->input->post('pid', TRUE) ?: $this->input->post('id', TRUE);
-        if ($raw !== NULL && ctype_digit(trim((string)$raw))) {
-            return (int) $raw;
-        }
-        return FALSE;
+        $pid = filter_var($raw, FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
+        return ($pid !== FALSE && $pid !== NULL) ? (int) $pid : FALSE;
     }
 
     // ==================================================================
