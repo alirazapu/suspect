@@ -681,8 +681,8 @@
         var action = urlMap[tab];
         if ( ! action) return;
         // For training records, reload affiliations tab (which renders both sections)
-        var reloadTab_ = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
-        deleteRecord(BASE + 'personprofile/' + action, {pid: PID, id: id}, reloadTab_);
+        var tabToReload = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+        deleteRecord(BASE + 'personprofile/' + action, {pid: PID, id: id}, tabToReload);
     });
 
     // Edit button — open a modal with fields pre-filled
