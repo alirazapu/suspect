@@ -34,6 +34,7 @@ class Auth extends CI_Controller
         // Already logged in? Send home.
         if ($this->session->userdata('user_id')) {
             $this->_redirect_after_login();
+            return;
         }
 
         $data = array('error' => '');
@@ -58,6 +59,7 @@ class Auth extends CI_Controller
                     ));
 
                     $this->_redirect_after_login();
+                    return;
                 } else {
                     $data['error'] = 'Invalid username/email or password.';
                 }
@@ -99,6 +101,10 @@ class Auth extends CI_Controller
             strpos($url, 'auth/login') !== FALSE ||
             preg_match('#/login/?(\?.*)?$#i', $url)
         );
+
+        // Flush session to disk before redirecting so it is available on the
+        // next request immediately after the Location header is followed.
+        session_write_close();
 
         if ( ! empty($url) && ! $is_login_url) {
             redirect($url);
