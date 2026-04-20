@@ -760,22 +760,22 @@
         var $btn = $(this);
         var tab  = $btn.data('tab');
         var row  = JSON.parse($btn.attr('data-row') || '{}');
-        _openEditModal(tab, row);
+        _openInlineEditForm(tab, row);
     });
 
     // Add button — open a blank modal
     $(document).on('click', '.btn-add-row', function () {
         var $btn = $(this);
         var tab  = $btn.data('tab');
-        _openEditModal(tab, {});
+        _openInlineEditForm(tab, {});
     });
 
     // Add Training button — opens blank training inline form inside affiliations pane
     $(document).on('click', '.btn-add-training', function () {
-        _openEditModal('#tab-trainings', {});
+        _openInlineEditForm('#tab-trainings', {});
     });
 
-    function _openEditModal(tab, row) {
+    function _openInlineEditForm(tab, row) {
         var config = _tabEditConfig(tab);
         if ( ! config) { showToast('warning', 'Edit not supported for this tab yet.'); return; }
 
@@ -1077,13 +1077,14 @@
     // Inline form save (tab child-record tabs)
     $(document).on('submit', '#inlineEditForm', function (e) {
         e.preventDefault();
-        var $form      = $(this);
-        var saveAction = $form.data('save-action');
+        var $form       = $(this);
+        var saveAction  = $form.data('save-action');
         var reloadTabId = $form.data('reload-tab');
         var data = $form.serializeArray().reduce(function (obj, item) {
             obj[item.name] = item.value; return obj;
         }, {});
-        $form.closest('.tab-inline-form-wrap').slideUp(200);
+        // Let saveRecord → reloadTab rebuild the pane (which hides the form wrapper again).
+        // Don't slide up early so users can see/retry if save fails.
         saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId);
     });
 
