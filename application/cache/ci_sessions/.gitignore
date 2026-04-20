@@ -1,0 +1,4 @@
+# Ignore session files but keep this directory tracked
+*
+!.gitignore
+!index.html

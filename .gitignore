@@ -3,6 +3,7 @@
 application/cache/*
 !application/cache/index.html
 !application/cache/.htaccess
+!application/cache/ci_sessions/
 
 application/logs/*
 !application/logs/index.html
