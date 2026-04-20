@@ -225,6 +225,11 @@ class Person_model extends CI_Model
         return $this->db->get(self::T_LU_MARITAL)->result_array();
     }
 
+    public function get_castes()
+    {
+        return $this->db->order_by('caste', 'ASC')->get(self::T_LU_CASTE)->result_array();
+    }
+
     // ==================================================================
     // Profile header
     // ==================================================================

@@ -18,6 +18,7 @@
     var tabLoaded = {};   // cache: don't reload a tab already fetched
     var BASE   = window.SUSPECT_BASE_URL || '/';
     var PID    = ($('body').data('person-id') || '').toString();
+    var LOOKUPS = null;   // cached lookup data from api/lookups
 
     // ----------------------------------------------------------------
     // Minimal HTML-escape helper
@@ -45,6 +46,158 @@
             html += '<tr><th class="bg-light" style="width:35%">' + label + '</th><td>' + val + '</td></tr>';
         });
         html += '</tbody></table>';
+        return html;
+    }
+
+    // ----------------------------------------------------------------
+    // Load lookup data (regions, religions, etc.) from server — cached
+    // ----------------------------------------------------------------
+    function loadLookups(callback) {
+        if (LOOKUPS) { callback(LOOKUPS); return; }
+        $.ajax({
+            url: BASE + 'api/lookups',
+            method: 'GET',
+            dataType: 'json',
+            success: function (resp) {
+                if (resp && resp.status === 'ok') {
+                    LOOKUPS = resp.data;
+                    callback(LOOKUPS);
+                } else {
+                    callback(null);
+                }
+            },
+            error: function () { callback(null); }
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // Build <option> HTML for a select from an array of objects
+    // ----------------------------------------------------------------
+    function buildOptions(items, idKey, labelKey, selectedVal) {
+        var html = '<option value="">— Select —</option>';
+        if ( ! items) return html;
+        $.each(items, function (_, item) {
+            var sel = (item[idKey] !== undefined && String(item[idKey]) === String(selectedVal)) ? ' selected' : '';
+            html += '<option value="' + escHtml(item[idKey]) + '"' + sel + '>' + escHtml(item[labelKey]) + '</option>';
+        });
+        return html;
+    }
+
+    // ----------------------------------------------------------------
+    // Form row helper
+    // ----------------------------------------------------------------
+    function fRow(label, inputHtml) {
+        return '<div class="form-group row mb-2">'
+            + '<label class="col-sm-3 col-form-label col-form-label-sm font-weight-bold">' + label + '</label>'
+            + '<div class="col-sm-9">' + inputHtml + '</div>'
+            + '</div>';
+    }
+
+    function fInput(name, val, type) {
+        return '<input type="' + (type || 'text') + '" class="form-control form-control-sm" name="' + escHtml(name) + '" value="' + escHtml(val) + '">';
+    }
+
+    function fTextarea(name, val, rows) {
+        return '<textarea class="form-control form-control-sm" name="' + escHtml(name) + '" rows="' + (rows || 2) + '">' + escHtml(val) + '</textarea>';
+    }
+
+    function fSelect(name, optionsHtml) {
+        return '<select class="form-control form-control-sm" name="' + escHtml(name) + '">' + optionsHtml + '</select>';
+    }
+
+    // ----------------------------------------------------------------
+    // Build BASIC INFO editable form
+    // ----------------------------------------------------------------
+    function buildBasicInfoForm(d, lk) {
+        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        lk = lk || {};
+
+        var regionOpts   = buildOptions(lk.regions, 'region_id', 'name', d.region_id);
+        var districtOpts = '<option value="">— Select Region First —</option>';
+        if (d.district_id) {
+            // Pre-populate district option so it shows the saved value before cascade loads
+            districtOpts = '<option value="' + escHtml(d.district_id) + '" selected>'
+                + escHtml(d.district || 'District #' + d.district_id) + '</option>';
+        }
+        var psOpts = '<option value="">— Select District First —</option>';
+        if (d.police_station_id) {
+            psOpts = '<option value="' + escHtml(d.police_station_id) + '" selected>'
+                + 'Police Station #' + escHtml(d.police_station_id) + '</option>';
+        }
+
+        var html = '<form id="basicinfoForm" class="mt-3">';
+        html += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
+        html += fRow('First Name',   fInput('first_name',  d.first_name));
+        html += fRow('Middle Name',  fInput('middle_name', d.middle_name));
+        html += fRow('Last Name',    fInput('last_name',   d.last_name));
+        html += fRow("Father's Name", fInput('father_name', d.father_name));
+        html += fRow('Permanent Address', fTextarea('address', d.address, 2));
+        html += fRow('Region', fSelect('region_id', regionOpts));
+        html += fRow('District', '<select class="form-control form-control-sm" name="district_id" id="basicDistrictSel">' + districtOpts + '</select>');
+        html += fRow('Police Station', '<select class="form-control form-control-sm" name="police_station_id" id="basicPsSel">' + psOpts + '</select>');
+        html += '<div class="mt-3">'
+            + '<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '</div>';
+        html += '</form>';
+        return html;
+    }
+
+    // ----------------------------------------------------------------
+    // Build DETAILED INFO editable form
+    // ----------------------------------------------------------------
+    function buildDetailedInfoForm(d, lk) {
+        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        lk = lk || {};
+
+        var genderOpts = '<option value="">— Select —</option>'
+            + '<option value="1"' + (String(d.gender) === '1' ? ' selected' : '') + '>Male</option>'
+            + '<option value="2"' + (String(d.gender) === '2' ? ' selected' : '') + '>Female</option>'
+            + '<option value="3"' + (String(d.gender) === '3' ? ' selected' : '') + '>Other</option>';
+
+        var sensOpts = '<option value="">— Select —</option>'
+            + '<option value="0"' + (String(d.is_sensitive_department) === '0' ? ' selected' : '') + '>No</option>'
+            + '<option value="1"' + (String(d.is_sensitive_department) === '1' ? ' selected' : '') + '>Yes</option>';
+
+        var religionOpts  = buildOptions(lk.religions,        'id', 'religion',      d.religion);
+        var sectOpts      = '<option value="">— Select Religion First —</option>';
+        if (d.sect) {
+            // Pre-populate current sect so it shows before cascade loads
+            sectOpts = '<option value="' + escHtml(d.sect) + '" selected>'
+                + escHtml(d.sect_label || 'Sect #' + d.sect) + '</option>';
+        }
+        var maritalOpts   = buildOptions(lk.marital_statuses, 'id', 'marital_status', d.marital_status_id || d.marital_status);
+        var casteOpts     = buildOptions(lk.castes,           'id', 'caste',          d.caste);
+        var countryOpts   = buildOptions(lk.countries,        'id', 'nicename',       d.nationality);
+
+        var html = '<form id="detailInfoForm" class="mt-3">';
+        html += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
+        html += '<div class="row">';
+        html += '<div class="col-md-6">';
+        html += fRow('Alias',          fInput('alias', d.alias));
+        html += fRow('Date of Birth',  fInput('dob',   d.dob, 'date'));
+        html += fRow('Gender',         fSelect('gender', genderOpts));
+        html += fRow('Marital Status', fSelect('marital_status', maritalOpts));
+        html += fRow('Religion',       fSelect('religion', religionOpts));
+        html += fRow('Sect',           '<select class="form-control form-control-sm" name="sect" id="detailSectSel">' + sectOpts + '</select>');
+        html += fRow('Caste',          fSelect('caste', casteOpts));
+        html += fRow('Nationality',    fSelect('nationality', countryOpts));
+        html += fRow('Place of Birth', fInput('place_of_birth', d.place_of_birth));
+        html += '</div>';
+        html += '<div class="col-md-6">';
+        html += fRow('Mother Tongue',  fInput('mother_tongue',    d.mother_tongue));
+        html += fRow('Languages (R/W)',fInput('language_read_write', d.language_read_write));
+        html += fRow('Languages (Spoken)', fInput('language_speak', d.language_speak));
+        html += fRow('Language Accent',fInput('language_accent',  d.language_accent));
+        html += fRow('Physical Appearance', fTextarea('physical_appearance', d.physical_appearance, 2));
+        html += fRow('Other Details',  fTextarea('other_details', d.other_details, 2));
+        html += fRow('Temp Address',   fTextarea('temporary_address', d.temporary_address, 2));
+        html += fRow('Sensitive Dept', fSelect('is_sensitive_department', sensOpts));
+        html += '</div>';
+        html += '</div>';
+        html += '<div class="mt-3">'
+            + '<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '</div>';
+        html += '</form>';
         return html;
     }
 
@@ -206,50 +359,51 @@
         switch (target) {
             // ----------------------------------------------------------
             case '#tab-basic':
-                loadTab(target, BASE + 'api/persons/' + PID + '/basic', function (d) {
-                    return kvTable(d, {
-                        name:            'Full Name',
-                        cnic:            'CNIC',
-                        father_name:     "Father's Name",
-                        dob:             'Date of Birth',
-                        gender_label:    'Gender',
-                        nationality_label: 'Nationality',
-                        religion_label:  'Religion',
-                        sect_label:      'Sect',
-                        caste_label:     'Caste',
-                        marital_status_label: 'Marital Status',
-                        place_of_birth:  'Place of Birth',
-                        alias:           'Alias',
-                        address:         'Permanent Address',
-                        district:        'District',
-                        region:          'Region',
-                        category:        'Category',
-                        language_read_write: 'Languages (R/W)',
-                        language_speak:  'Languages (Spoken)',
-                        physical_appearance: 'Physical Appearance'
-                    });
+                if (tabLoaded[target]) return;
+                tabLoaded[target] = true;
+                var $paneBasic = $(target);
+                $paneBasic.find('.tab-loading').show();
+                $.when(
+                    $.ajax({ url: BASE + 'api/persons/' + PID + '/basic',  method: 'GET', dataType: 'json' }),
+                    $.ajax({ url: BASE + 'api/lookups',                     method: 'GET', dataType: 'json' })
+                ).done(function (basicResp, lookupResp) {
+                    var d  = (basicResp[0]  && basicResp[0].status  === 'ok') ? basicResp[0].data  : null;
+                    var lk = (lookupResp[0] && lookupResp[0].status === 'ok') ? lookupResp[0].data : {};
+                    if (lk) LOOKUPS = lk;
+                    $paneBasic.html(buildBasicInfoForm(d, lk));
+                    // Load districts for the saved region
+                    if (d && d.region_id) {
+                        loadDistrictCascade('#basicDistrictSel', d.region_id, d.district_id, function () {
+                            if (d.district_id) {
+                                loadPoliceCascade('#basicPsSel', d.district_id, d.police_station_id);
+                            }
+                        });
+                    }
+                }).fail(function () {
+                    $paneBasic.html('<p class="text-danger p-3"><i class="fas fa-exclamation-circle mr-1"></i>Failed to load basic info.</p>');
                 });
                 break;
 
             // ----------------------------------------------------------
             case '#tab-detailed':
-                loadTab(target, BASE + 'api/persons/' + PID + '/detailed', function (d) {
-                    return kvTable(d, {
-                        marital_status:  'Marital Status',
-                        dob:             'Date of Birth',
-                        place_of_birth:  'Place of Birth',
-                        alias:           'Alias',
-                        religion_label:  'Religion',
-                        sect_label:      'Sect',
-                        caste_label:     'Caste',
-                        nationality_label: 'Nationality',
-                        mother_tongue:   'Mother Tongue',
-                        language_read_write: 'Languages (R/W)',
-                        language_speak:  'Languages (Spoken)',
-                        language_accent: 'Language Accent',
-                        physical_appearance: 'Physical Appearance',
-                        is_sensitive_department: 'Sensitive Dept.'
-                    });
+                if (tabLoaded[target]) return;
+                tabLoaded[target] = true;
+                var $paneDetail = $(target);
+                $paneDetail.find('.tab-loading').show();
+                $.when(
+                    $.ajax({ url: BASE + 'api/persons/' + PID + '/detailed', method: 'GET', dataType: 'json' }),
+                    $.ajax({ url: BASE + 'api/lookups',                       method: 'GET', dataType: 'json' })
+                ).done(function (detailResp, lookupResp) {
+                    var d  = (detailResp[0]  && detailResp[0].status  === 'ok') ? detailResp[0].data  : null;
+                    var lk = (lookupResp[0]  && lookupResp[0].status  === 'ok') ? lookupResp[0].data  : {};
+                    if (lk) LOOKUPS = lk;
+                    $paneDetail.html(buildDetailedInfoForm(d, lk));
+                    // Load sects for the saved religion
+                    if (d && d.religion) {
+                        loadSectCascade('#detailSectSel', d.religion, d.sect);
+                    }
+                }).fail(function () {
+                    $paneDetail.html('<p class="text-danger p-3"><i class="fas fa-exclamation-circle mr-1"></i>Failed to load detailed info.</p>');
                 });
                 break;
 
@@ -408,21 +562,45 @@
 
             // ----------------------------------------------------------
             case '#tab-affiliations':
-                loadTab(target, BASE + 'api/persons/' + PID + '/affiliations', function (d) {
-                    return dataTable(d, [
+                if (tabLoaded[target]) return;
+                tabLoaded[target] = true;
+                var $paneAff = $(target);
+                $paneAff.html('<div class="p-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading…</div>');
+                $.when(
+                    $.ajax({ url: BASE + 'api/persons/' + PID + '/affiliations', method: 'GET', dataType: 'json' }),
+                    $.ajax({ url: BASE + 'api/persons/' + PID + '/trainings',    method: 'GET', dataType: 'json' })
+                ).done(function (affResp, trainResp) {
+                    var affData   = (affResp[0]   && affResp[0].status   === 'ok') ? affResp[0].data   : [];
+                    var trainData = (trainResp[0]  && trainResp[0].status === 'ok') ? trainResp[0].data : [];
+
+                    var addAffBtn = '<button class="btn btn-sm btn-success btn-add-row mr-2" data-tab="' + target + '">'
+                        + '<i class="fas fa-plus mr-1"></i>Add Affiliation</button>';
+                    var addTrainBtn = '<button class="btn btn-sm btn-info btn-add-training" data-tab="' + target + '">'
+                        + '<i class="fas fa-plus mr-1"></i>Add Training</button>';
+
+                    var affHtml = dataTable(affData, [
                         {key: 'organization_id',   label: 'Organization ID'},
                         {key: 'ideological_stance',label: 'Stance'},
                         {key: 'designation',       label: 'Designation'},
                         {key: 'is_trained',        label: 'Trained',
                             render: function (r) { return r.is_trained ? 'Yes' : 'No'; }},
                         {key: 'remarks',           label: 'Details'}
-                    ], {
-                        tab: target,
-                        actions: {edit: true, del: true}
-                    });
-                }, {
-                    addBtn: '<button class="btn btn-sm btn-success btn-add-row" data-tab="' + target + '">'
-                        + '<i class="fas fa-plus mr-1"></i>Add Affiliation</button>'
+                    ], { tab: target, actions: {edit: true, del: true} });
+
+                    var trainHtml = dataTable(trainData, [
+                        {key: 'training_camp',     label: 'Camp'},
+                        {key: 'training_site',     label: 'Site'},
+                        {key: 'training_year',     label: 'Year'},
+                        {key: 'training_duration', label: 'Duration'},
+                        {key: 'training_purpose',  label: 'Purpose'}
+                    ], { tab: '#tab-trainings', actions: {edit: true, del: true} });
+
+                    var html = '<div class="mb-2">' + addAffBtn + addTrainBtn + '</div>';
+                    html += '<h6 class="mt-3 mb-1 text-secondary">Affiliations</h6>' + affHtml;
+                    html += '<h6 class="mt-4 mb-1 text-secondary">Trainings</h6>' + trainHtml;
+                    $paneAff.html(html);
+                }).fail(function () {
+                    $paneAff.html('<p class="text-danger p-3"><i class="fas fa-exclamation-circle mr-1"></i>Failed to load affiliations/trainings.</p>');
                 });
                 break;
 
@@ -497,11 +675,14 @@
             '#tab-assets':     'delete_asset',
             '#tab-criminal':   'delete_criminalrecord',
             '#tab-affiliations': 'delete_affiliations',
+            '#tab-trainings':  'delete_training',
             '#tab-reports':    'deletereport'
         };
         var action = urlMap[tab];
         if ( ! action) return;
-        deleteRecord(BASE + 'personprofile/' + action, {pid: PID, id: id}, tab);
+        // For training records, reload affiliations tab (which renders both sections)
+        var reloadTab_ = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+        deleteRecord(BASE + 'personprofile/' + action, {pid: PID, id: id}, reloadTab_);
     });
 
     // Edit button — open a modal with fields pre-filled
@@ -517,6 +698,16 @@
         var $btn = $(this);
         var tab  = $btn.data('tab');
         _openEditModal(tab, {});
+    });
+
+    // Add Training button — opens blank training modal, reloads affiliations tab on save
+    $(document).on('click', '.btn-add-training', function () {
+        _openEditModal('#tab-trainings', {});
+        // Patch modal save to reload affiliations tab (which contains both sections)
+        $('#suspectModal').one('hide.bs.modal', function () {
+            delete tabLoaded['#tab-affiliations'];
+            reloadTab('#tab-affiliations');
+        });
     });
 
     function _openEditModal(tab, row) {
@@ -554,7 +745,9 @@
                 obj[item.name] = item.value;
                 return obj;
             }, {});
-            saveRecord(BASE + 'personprofile/' + config.saveAction, data, tab);
+            // Training records live inside the affiliations tab
+            var reloadTabId = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+            saveRecord(BASE + 'personprofile/' + config.saveAction, data, reloadTabId);
             $('#suspectModal').modal('hide');
         });
     }
@@ -695,6 +888,20 @@
                     {name: 'self_recruitment_details', label: 'Self-Recruitment Details', type: 'textarea'}
                 ]
             },
+            '#tab-trainings': {
+                label: 'Training',
+                saveAction: 'update_trainings',
+                fields: [
+                    {name: 'organization_id',   label: 'Organization ID', type: 'number'},
+                    {name: 'training_camp',     label: 'Camp'},
+                    {name: 'training_site',     label: 'Site'},
+                    {name: 'training_year',     label: 'Year', type: 'number'},
+                    {name: 'training_duration', label: 'Duration'},
+                    {name: 'training_purpose',  label: 'Purpose'},
+                    {name: 'material_taught',   label: 'Material Taught', type: 'textarea'},
+                    {name: 'other_details',     label: 'Other Details', type: 'textarea'}
+                ]
+            },
             '#tab-reports': {
                 label: 'Report',
                 saveAction: 'update_personreports',
@@ -719,7 +926,7 @@
     }
 
     // ================================================================
-    // Basic info / Detailed info inline save (forms already in the view)
+    // Basic info / Detailed info inline save
     // ================================================================
 
     $(document).on('submit', '#basicinfoForm', function (e) {
@@ -736,6 +943,109 @@
             obj[item.name] = item.value; return obj;
         }, {});
         saveRecord(BASE + 'personprofile/update_detail_info', data, '#tab-detailed', 'Detail info updated.');
+    });
+
+    // ================================================================
+    // Cascade: Region → District → Police Station
+    // ================================================================
+
+    function loadDistrictCascade(selId, regionId, selectedDistrictId, done) {
+        $(selId).html('<option>Loading…</option>').prop('disabled', true);
+        $.ajax({
+            url: BASE + 'personprofile/get_district',
+            method: 'POST',
+            data: { region_id: regionId },
+            dataType: 'json',
+            success: function (items) {
+                var opts = '<option value="">— Select District —</option>';
+                if (items && items.length) {
+                    $.each(items, function (_, d) {
+                        var sel = (String(d.district_id) === String(selectedDistrictId)) ? ' selected' : '';
+                        opts += '<option value="' + escHtml(d.district_id) + '"' + sel + '>' + escHtml(d.name) + '</option>';
+                    });
+                }
+                $(selId).html(opts).prop('disabled', false);
+                if (done) done();
+            },
+            error: function () {
+                $(selId).html('<option value="">— Load failed —</option>').prop('disabled', false);
+                if (done) done();
+            }
+        });
+    }
+
+    function loadPoliceCascade(selId, districtId, selectedPsId) {
+        $(selId).html('<option>Loading…</option>').prop('disabled', true);
+        $.ajax({
+            url: BASE + 'personprofile/get_police_station',
+            method: 'POST',
+            data: { district_id: districtId },
+            dataType: 'json',
+            success: function (items) {
+                var opts = '<option value="">— Select Police Station —</option>';
+                if (items && items.length) {
+                    $.each(items, function (_, p) {
+                        var sel = (String(p.ps_id) === String(selectedPsId)) ? ' selected' : '';
+                        opts += '<option value="' + escHtml(p.ps_id) + '"' + sel + '>' + escHtml(p.ps_name) + '</option>';
+                    });
+                }
+                $(selId).html(opts).prop('disabled', false);
+            },
+            error: function () {
+                $(selId).html('<option value="">— Load failed —</option>').prop('disabled', false);
+            }
+        });
+    }
+
+    function loadSectCascade(selId, religionId, selectedSectId) {
+        $(selId).html('<option>Loading…</option>').prop('disabled', true);
+        $.ajax({
+            url: BASE + 'personprofile/get_sect',
+            method: 'POST',
+            data: { religion_id: religionId },
+            dataType: 'json',
+            success: function (items) {
+                var opts = '<option value="">— Select Sect —</option>';
+                if (items && items.length) {
+                    $.each(items, function (_, s) {
+                        var sel = (String(s.id) === String(selectedSectId)) ? ' selected' : '';
+                        opts += '<option value="' + escHtml(s.id) + '"' + sel + '>' + escHtml(s.sect) + '</option>';
+                    });
+                }
+                $(selId).html(opts).prop('disabled', false);
+            },
+            error: function () {
+                $(selId).html('<option value="">— Load failed —</option>').prop('disabled', false);
+            }
+        });
+    }
+
+    // Cascade: when Region changes on basic info form → reload districts
+    $(document).on('change', '#basicinfoForm [name="region_id"]', function () {
+        var regionId = $(this).val();
+        loadDistrictCascade('#basicDistrictSel', regionId, '', function () {
+            $('#basicPsSel').html('<option value="">— Select District First —</option>');
+        });
+    });
+
+    // Cascade: when District changes on basic info form → reload police stations
+    $(document).on('change', '#basicinfoForm #basicDistrictSel', function () {
+        var districtId = $(this).val();
+        if (districtId) {
+            loadPoliceCascade('#basicPsSel', districtId, '');
+        } else {
+            $('#basicPsSel').html('<option value="">— Select District First —</option>');
+        }
+    });
+
+    // Cascade: when Religion changes on detail info form → reload sects
+    $(document).on('change', '#detailInfoForm [name="religion"]', function () {
+        var religionId = $(this).val();
+        if (religionId) {
+            loadSectCascade('#detailSectSel', religionId, '');
+        } else {
+            $('#detailSectSel').html('<option value="">— Select Religion First —</option>');
+        }
     });
 
     // ----------------------------------------------------------------

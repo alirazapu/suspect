@@ -67,6 +67,7 @@ $route['persons/profile']   = 'persons/profile';
 $route['personprofile/person_profile'] = 'personprofile/person_profile';
 
 // API routes — /api/persons/:id/<tab>
+$route['api/lookups']                           = 'api/lookups';
 $route['api/persons/search']                    = 'api/persons_search';
 $route['api/persons/(:num)/basic']              = 'api/persons_basic/$1';
 $route['api/persons/(:num)/detailed']           = 'api/persons_detailed/$1';

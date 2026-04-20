@@ -64,6 +64,32 @@ class Api extends CI_Controller
     }
 
     // ------------------------------------------------------------------
+    // Lookups — all reference data for front-end dropdowns
+    // ------------------------------------------------------------------
+
+    public function lookups()
+    {
+        try {
+            $data = array(
+                'regions'          => $this->Person_model->get_regions(),
+                'religions'        => $this->Person_model->get_religions(),
+                'sects'            => $this->Person_model->get_sects_by_religion(NULL),
+                'castes'           => $this->Person_model->get_castes(),
+                'marital_statuses' => $this->Person_model->get_marital_statuses(),
+                'countries'        => $this->Person_model->get_countries(),
+                'banks'            => $this->Person_model->get_bank_list(),
+                'education_levels' => $this->Person_model->get_education_levels(),
+                'identity_types'   => $this->Person_model->get_identity_types(),
+                'relation_types'   => $this->Person_model->get_relation_types(),
+            );
+            $this->_ok($data);
+        } catch (Exception $e) {
+            log_message('error', 'Api::lookups – ' . $e->getMessage());
+            $this->_error('Failed to load lookup data.');
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Tab endpoints
     // ------------------------------------------------------------------
 
@@ -71,105 +97,180 @@ class Api extends CI_Controller
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_basic_info($pid));
+        try {
+            $this->_ok($this->Person_model->get_basic_info($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_basic pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_error('Failed to load basic info.');
+        }
     }
 
     public function persons_detailed($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_detailed_info($pid));
+        try {
+            $this->_ok($this->Person_model->get_detailed_info($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_detailed pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_error('Failed to load detailed info.');
+        }
     }
 
     public function persons_identities($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_identities($pid));
+        try {
+            $this->_ok($this->Person_model->get_identities($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_identities pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_education($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_education($pid));
+        try {
+            $this->_ok($this->Person_model->get_education($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_education pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_income($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_income($pid));
+        try {
+            $this->_ok($this->Person_model->get_income($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_income pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_banks($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_banks($pid));
+        try {
+            $this->_ok($this->Person_model->get_banks($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_banks pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_assets($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_assets($pid));
+        try {
+            $this->_ok($this->Person_model->get_assets($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_assets pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_mobiles($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_mobiles($pid));
+        try {
+            $this->_ok($this->Person_model->get_mobiles($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_mobiles pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_relations($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_relations($pid));
+        try {
+            $this->_ok($this->Person_model->get_relations($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_relations pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_criminal($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_criminal($pid));
+        try {
+            $this->_ok($this->Person_model->get_criminal($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_criminal pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_affiliations($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_affiliations($pid));
+        try {
+            $this->_ok($this->Person_model->get_affiliations($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_affiliations pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_trainings($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_trainings($pid));
+        try {
+            $this->_ok($this->Person_model->get_trainings($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_trainings pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_projects($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_projects($pid));
+        try {
+            $this->_ok($this->Person_model->get_projects($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_projects pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_category_history($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_category_history($pid));
+        try {
+            $this->_ok($this->Person_model->get_category_history($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_category_history pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     public function persons_reports($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
-        $this->_ok($this->Person_model->get_reports($pid));
+        try {
+            $this->_ok($this->Person_model->get_reports($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_reports pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
     }
 
     // ------------------------------------------------------------------
