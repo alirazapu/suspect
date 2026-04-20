@@ -168,7 +168,7 @@
                         $row_num = ($page - 1) * $limit + 1;
                         foreach ($persons as $p):
                             // Encrypt person ID for the profile URL
-                            $enc_id = $this->Person_model->encrypt_person_id($p->id);
+                            $enc_id = $this->Person_model->encrypt_person_id($p->person_id);
                         ?>
                         <tr>
                             <td class="text-muted"><?php echo $row_num++; ?></td>

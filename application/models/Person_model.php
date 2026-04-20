@@ -28,7 +28,7 @@ class Person_model extends CI_Model
     // ----------------------------------------------------------------
     // Table names (aiesplus DB schema)
     // ----------------------------------------------------------------
-    const T_PERSONS           = 'persons';
+    const T_PERSONS           = 'person';
     const T_PERSON_DETAIL     = 'person_detail';
     const T_PERSON_IDENTITY   = 'person_identities';
     const T_PERSON_EDUCATION  = 'person_education';
@@ -65,7 +65,7 @@ class Person_model extends CI_Model
     public function get_persons(array $filters = array(), $limit = 25, $offset = 0)
     {
         $this->_apply_filters($filters);
-        $this->db->order_by('p.name', 'ASC');
+        $this->db->order_by('p.first_name', 'ASC');
         $this->db->limit($limit, $offset);
         $result = $this->db->get(self::T_PERSONS . ' p')->result();
         return $result ? $result : array();
@@ -85,51 +85,31 @@ class Person_model extends CI_Model
      */
     private function _apply_filters(array $filters)
     {
-        // Full-text / general search
+        // Full-text / general search across name and father_name
         if ( ! empty($filters['q'])) {
             $q = trim($filters['q']);
             $this->db->group_start()
-                     ->like('p.name',        $q)
-                     ->or_like('p.father_name', $q)
-                     ->or_like('p.cnic',      $q)
+                     ->like('p.first_name',  $q)
+                     ->or_like('p.last_name',    $q)
+                     ->or_like('p.middle_name',  $q)
+                     ->or_like('p.father_name',  $q)
                      ->group_end();
         }
 
-        if ( ! empty($filters['gender']))
-            $this->db->where('p.gender', $filters['gender']);
-
-        if ( ! empty($filters['province']))
-            $this->db->where('p.province', $filters['province']);
-
-        if ( ! empty($filters['district']))
-            $this->db->like('p.district', $filters['district']);
-
-        if ( ! empty($filters['category']))
-            $this->db->where('p.category', $filters['category']);
-
-        if ( ! empty($filters['cnic']))
-            $this->db->like('p.cnic', $filters['cnic']);
-
-        // Default select — overridden to DISTINCT when a join adds duplicate rows
-        $this->db->select('p.*');
+        // Default select: all columns plus a computed full name for convenience
+        $this->db->select("p.*, CONCAT(COALESCE(p.first_name,''), ' ', COALESCE(p.last_name,'')) AS name");
 
         if ( ! empty($filters['mobile'])) {
             // Join mobiles table for mobile number search; use DISTINCT to avoid duplicates
-            $this->db->join(self::T_PERSON_MOBILES . ' mob', 'mob.person_id = p.id', 'left');
+            $this->db->join(self::T_PERSON_MOBILES . ' mob', 'mob.person_id = p.person_id', 'left');
             $this->db->like('mob.mobile_number', $filters['mobile']);
-            $this->db->select('DISTINCT p.*');
+            $this->db->select("DISTINCT p.*, CONCAT(COALESCE(p.first_name,''), ' ', COALESCE(p.last_name,'')) AS name");
         }
 
         if ( ! empty($filters['affiliation'])) {
-            $this->db->join(self::T_PERSON_AFFILIATIONS . ' aff', 'aff.person_id = p.id', 'left');
+            $this->db->join(self::T_PERSON_AFFILIATIONS . ' aff', 'aff.person_id = p.person_id', 'left');
             $this->db->like('aff.name', $filters['affiliation']);
         }
-
-        if ( ! empty($filters['from_date']))
-            $this->db->where('p.created_at >=', $filters['from_date']);
-
-        if ( ! empty($filters['to_date']))
-            $this->db->where('p.created_at <=', $filters['to_date'] . ' 23:59:59');
     }
 
     // ------------------------------------------------------------------
@@ -148,15 +128,8 @@ class Person_model extends CI_Model
 
     public function get_categories()
     {
-        $rows = $this->db
-            ->select('DISTINCT category')
-            ->where('category IS NOT NULL')
-            ->where('category !=', '')
-            ->order_by('category', 'ASC')
-            ->get(self::T_PERSONS)
-            ->result_array();
-
-        return array_column($rows, 'category');
+        // The person table does not have a category column — return an empty list.
+        return array();
     }
 
     // ==================================================================
@@ -169,7 +142,8 @@ class Person_model extends CI_Model
     public function get_person_header($person_id)
     {
         return $this->db
-            ->where('id', (int) $person_id)
+            ->select("*, CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')) AS name")
+            ->where('person_id', (int) $person_id)
             ->get(self::T_PERSONS)
             ->row();
     }
@@ -181,7 +155,8 @@ class Person_model extends CI_Model
     public function get_basic_info($person_id)
     {
         $row = $this->db
-            ->where('id', (int) $person_id)
+            ->select("*, CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,'')) AS name")
+            ->where('person_id', (int) $person_id)
             ->get(self::T_PERSONS)
             ->row_array();
         return $row ?: null;
@@ -200,7 +175,7 @@ class Person_model extends CI_Model
             $row = $this->db
                 ->select('marital_status, spouse_name, children_count, occupation,
                           designation, organization, education_level, email, website, remarks')
-                ->where('id', (int) $person_id)
+                ->where('person_id', (int) $person_id)
                 ->get(self::T_PERSONS)
                 ->row_array();
         }
