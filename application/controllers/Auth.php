@@ -11,7 +11,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  *   - If a `redirect_after_login` URL was stored in the session
  *     (set by the SSO hook when redirecting an unauthenticated request),
  *     the user is sent back to that URL.
- *   - Otherwise the user is sent to the default dashboard.
+ *   - Otherwise the user is sent to the persons listing (default dashboard).
  */
 class Auth extends CI_Controller
 {
@@ -83,17 +83,27 @@ class Auth extends CI_Controller
 
     /**
      * Redirect to the originally requested URL (stored in session by the
-     * SSO hook) or fall back to the site root / dashboard.
+     * SSO hook) or fall back to the persons dashboard.
+     *
+     * If the stored URL is the login page itself (e.g. the user came here
+     * directly rather than being bounced by the gate), ignore it and send
+     * the user to the dashboard so we don't loop back to the login form.
      */
     private function _redirect_after_login()
     {
         $url = $this->session->userdata('redirect_after_login');
         $this->session->unset_userdata('redirect_after_login');
 
-        if ( ! empty($url)) {
+        // Treat any URL that contains a login segment as "no valid redirect".
+        $is_login_url = ! empty($url) && (
+            strpos($url, 'auth/login') !== FALSE ||
+            preg_match('#/login/?(\?.*)?$#i', $url)
+        );
+
+        if ( ! empty($url) && ! $is_login_url) {
             redirect($url);
         } else {
-            redirect('/');
+            redirect('persons');
         }
     }
 }

@@ -33,7 +33,7 @@ class Sso_token
         // ------------------------------------------------------------------
         // Exclude public routes from the gate
         // ------------------------------------------------------------------
-        $excluded_prefixes = array('auth/login', 'auth/logout', 'assets', 'dist', 'uploads');
+        $excluded_prefixes = array('auth/login', 'auth/logout', 'login', 'logout', 'assets', 'dist', 'uploads');
         foreach ($excluded_prefixes as $prefix) {
             if ($uri === $prefix || strpos($uri, $prefix . '/') === 0) {
                 return; // allow through without checking
