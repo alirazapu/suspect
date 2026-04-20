@@ -19,6 +19,8 @@
     var BASE   = window.SUSPECT_BASE_URL || '/';
     var PID    = ($('body').data('person-id') || '').toString();
     var LOOKUPS = null;   // cached lookup data from api/lookups
+    var basicInfoData  = null;   // cached basic info API response (for Edit button)
+    var detailInfoData = null;   // cached detail info API response (for Edit button)
 
     // ----------------------------------------------------------------
     // Minimal HTML-escape helper
@@ -46,6 +48,66 @@
             html += '<tr><th class="bg-light" style="width:35%">' + label + '</th><td>' + val + '</td></tr>';
         });
         html += '</tbody></table>';
+        return html;
+    }
+
+    // ----------------------------------------------------------------
+    // Read-only views for Basic Info and Detailed Info tabs
+    // (shown by default; Edit button switches to editable form)
+    // ----------------------------------------------------------------
+    function renderBasicReadOnly(d) {
+        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        var html = '<div class="d-flex justify-content-end mb-2">'
+            + '<button type="button" class="btn btn-sm btn-outline-primary" id="btnEditBasic">'
+            + '<i class="fas fa-edit mr-1"></i>Edit</button></div>';
+        html += kvTable(d, {
+            name:            'Full Name',
+            cnic:            'CNIC',
+            father_name:     "Father's Name",
+            dob:             'Date of Birth',
+            gender_label:    'Gender',
+            address:         'Permanent Address',
+            district:        'District',
+            region:          'Region',
+            category:        'Category',
+            nationality_label: 'Nationality',
+            religion_label:  'Religion',
+            sect_label:      'Sect',
+            caste_label:     'Caste',
+            marital_status_label: 'Marital Status',
+            place_of_birth:  'Place of Birth',
+            alias:           'Alias',
+            language_read_write: 'Languages (R/W)',
+            language_speak:  'Languages (Spoken)',
+            physical_appearance: 'Physical Appearance'
+        });
+        return html;
+    }
+
+    function renderDetailReadOnly(d) {
+        if ( ! d) return '<p class="text-muted p-3">No data available.</p>';
+        var html = '<div class="d-flex justify-content-end mb-2">'
+            + '<button type="button" class="btn btn-sm btn-outline-primary" id="btnEditDetail">'
+            + '<i class="fas fa-edit mr-1"></i>Edit</button></div>';
+        html += kvTable(d, {
+            alias:           'Alias',
+            dob:             'Date of Birth',
+            gender:          'Gender',
+            marital_status:  'Marital Status',
+            religion_label:  'Religion',
+            sect_label:      'Sect',
+            caste_label:     'Caste',
+            nationality_label: 'Nationality',
+            place_of_birth:  'Place of Birth',
+            mother_tongue:   'Mother Tongue',
+            language_read_write: 'Languages (R/W)',
+            language_speak:  'Languages (Spoken)',
+            language_accent: 'Language Accent',
+            physical_appearance: 'Physical Appearance',
+            other_details:   'Other Details',
+            temporary_address: 'Temp Address',
+            is_sensitive_department: 'Sensitive Dept.'
+        });
         return html;
     }
 
@@ -136,7 +198,8 @@
         html += fRow('District', '<select class="form-control form-control-sm" name="district_id" id="basicDistrictSel">' + districtOpts + '</select>');
         html += fRow('Police Station', '<select class="form-control form-control-sm" name="police_station_id" id="basicPsSel">' + psOpts + '</select>');
         html += '<div class="mt-3">'
-            + '<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '<button type="submit" class="btn btn-primary btn-sm mr-2"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '<button type="button" class="btn btn-secondary btn-sm" id="btnCancelBasic"><i class="fas fa-times mr-1"></i>Cancel</button>'
             + '</div>';
         html += '</form>';
         return html;
@@ -195,7 +258,8 @@
         html += '</div>';
         html += '</div>';
         html += '<div class="mt-3">'
-            + '<button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '<button type="submit" class="btn btn-primary btn-sm mr-2"><i class="fas fa-save mr-1"></i>Save Changes</button>'
+            + '<button type="button" class="btn btn-secondary btn-sm" id="btnCancelDetail"><i class="fas fa-times mr-1"></i>Cancel</button>'
             + '</div>';
         html += '</form>';
         return html;
@@ -362,23 +426,14 @@
                 if (tabLoaded[target]) return;
                 tabLoaded[target] = true;
                 var $paneBasic = $(target);
-                $paneBasic.find('.tab-loading').show();
+                $paneBasic.html('<div class="p-3"><div class="spinner-border text-primary" role="status"></div> Loading…</div>');
                 $.when(
                     $.ajax({ url: BASE + 'api/persons/' + PID + '/basic',  method: 'GET', dataType: 'json' }),
                     $.ajax({ url: BASE + 'api/lookups',                     method: 'GET', dataType: 'json' })
                 ).done(function (basicResp, lookupResp) {
-                    var d  = (basicResp[0]  && basicResp[0].status  === 'ok') ? basicResp[0].data  : null;
-                    var lk = (lookupResp[0] && lookupResp[0].status === 'ok') ? lookupResp[0].data : {};
-                    if (lk) LOOKUPS = lk;
-                    $paneBasic.html(buildBasicInfoForm(d, lk));
-                    // Load districts for the saved region
-                    if (d && d.region_id) {
-                        loadDistrictCascade('#basicDistrictSel', d.region_id, d.district_id, function () {
-                            if (d.district_id) {
-                                loadPoliceCascade('#basicPsSel', d.district_id, d.police_station_id);
-                            }
-                        });
-                    }
+                    basicInfoData = (basicResp[0]  && basicResp[0].status  === 'ok') ? basicResp[0].data  : null;
+                    if (lookupResp[0] && lookupResp[0].status === 'ok') LOOKUPS = lookupResp[0].data;
+                    $paneBasic.html(renderBasicReadOnly(basicInfoData));
                 }).fail(function () {
                     $paneBasic.html('<p class="text-danger p-3"><i class="fas fa-exclamation-circle mr-1"></i>Failed to load basic info.</p>');
                 });
@@ -389,19 +444,14 @@
                 if (tabLoaded[target]) return;
                 tabLoaded[target] = true;
                 var $paneDetail = $(target);
-                $paneDetail.find('.tab-loading').show();
+                $paneDetail.html('<div class="p-3"><div class="spinner-border text-primary" role="status"></div> Loading…</div>');
                 $.when(
                     $.ajax({ url: BASE + 'api/persons/' + PID + '/detailed', method: 'GET', dataType: 'json' }),
                     $.ajax({ url: BASE + 'api/lookups',                       method: 'GET', dataType: 'json' })
                 ).done(function (detailResp, lookupResp) {
-                    var d  = (detailResp[0]  && detailResp[0].status  === 'ok') ? detailResp[0].data  : null;
-                    var lk = (lookupResp[0]  && lookupResp[0].status  === 'ok') ? lookupResp[0].data  : {};
-                    if (lk) LOOKUPS = lk;
-                    $paneDetail.html(buildDetailedInfoForm(d, lk));
-                    // Load sects for the saved religion
-                    if (d && d.religion) {
-                        loadSectCascade('#detailSectSel', d.religion, d.sect);
-                    }
+                    detailInfoData = (detailResp[0] && detailResp[0].status === 'ok') ? detailResp[0].data : null;
+                    if (lookupResp[0] && lookupResp[0].status === 'ok') LOOKUPS = lookupResp[0].data;
+                    $paneDetail.html(renderDetailReadOnly(detailInfoData));
                 }).fail(function () {
                     $paneDetail.html('<p class="text-danger p-3"><i class="fas fa-exclamation-circle mr-1"></i>Failed to load detailed info.</p>');
                 });
@@ -926,9 +976,42 @@
     }
 
     // ================================================================
-    // Basic info / Detailed info inline save
+    // Basic info / Detailed info — Edit / Cancel / Save handlers
     // ================================================================
 
+    // Edit button → switch basic info tab to editable form
+    $(document).on('click', '#btnEditBasic', function () {
+        var lk = LOOKUPS || {};
+        $('#tab-basic').html(buildBasicInfoForm(basicInfoData, lk));
+        if (basicInfoData && basicInfoData.region_id) {
+            loadDistrictCascade('#basicDistrictSel', basicInfoData.region_id, basicInfoData.district_id, function () {
+                if (basicInfoData && basicInfoData.district_id) {
+                    loadPoliceCascade('#basicPsSel', basicInfoData.district_id, basicInfoData.police_station_id);
+                }
+            });
+        }
+    });
+
+    // Cancel → restore read-only view without a server round-trip
+    $(document).on('click', '#btnCancelBasic', function () {
+        $('#tab-basic').html(renderBasicReadOnly(basicInfoData));
+    });
+
+    // Edit button → switch detailed info tab to editable form
+    $(document).on('click', '#btnEditDetail', function () {
+        var lk = LOOKUPS || {};
+        $('#tab-detailed').html(buildDetailedInfoForm(detailInfoData, lk));
+        if (detailInfoData && detailInfoData.religion) {
+            loadSectCascade('#detailSectSel', detailInfoData.religion, detailInfoData.sect);
+        }
+    });
+
+    // Cancel → restore read-only view without a server round-trip
+    $(document).on('click', '#btnCancelDetail', function () {
+        $('#tab-detailed').html(renderDetailReadOnly(detailInfoData));
+    });
+
+    // Save basic info form → POST, on success reload tab (shows fresh read-only view)
     $(document).on('submit', '#basicinfoForm', function (e) {
         e.preventDefault();
         var data = $(this).serializeArray().reduce(function (obj, item) {
@@ -937,6 +1020,7 @@
         saveRecord(BASE + 'personprofile/update_basic_info', data, '#tab-basic', 'Basic info updated.');
     });
 
+    // Save detailed info form → POST, on success reload tab
     $(document).on('submit', '#detailInfoForm', function (e) {
         e.preventDefault();
         var data = $(this).serializeArray().reduce(function (obj, item) {

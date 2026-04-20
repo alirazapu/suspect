@@ -358,7 +358,7 @@ class Person_model extends CI_Model
                       NULL AS issue_date,
                       NULL AS expiry_date,
                       NULL AS issue_place,
-                      NULL AS status")
+                      NULL AS status", FALSE)
             ->join(self::T_LU_IDENTITY . ' lui', 'lui.id = pi.identity_id', 'left')
             ->where('pi.person_id', (int) $person_id)
             ->order_by('pi.id', 'ASC')
@@ -382,7 +382,7 @@ class Person_model extends CI_Model
                       pe.complete_year AS passing_year,
                       NULL AS grade,
                       pe.education_level AS education_level_id,
-                      COALESCE(lue.education_level, '') AS education_level_label")
+                      COALESCE(lue.education_level, '') AS education_level_label", FALSE)
             ->join(self::T_LU_EDUCATION . ' lue', 'lue.id = pe.education_level', 'left')
             ->where('pe.person_id', (int) $person_id)
             ->order_by('pe.id', 'ASC')
@@ -407,7 +407,7 @@ class Person_model extends CI_Model
                       NULL AS annual_amount,
                       pis.income_source_duration,
                       pis.file_link,
-                      NULL AS remarks")
+                      NULL AS remarks", FALSE)
             ->where('pis.person_id', (int) $person_id)
             ->order_by('pis.id', 'ASC')
             ->get(self::T_PERSON_INCOME . ' pis')
@@ -437,7 +437,7 @@ class Person_model extends CI_Model
                       pb.ban_bank,
                       NULL AS account_type,
                       NULL AS iban,
-                      NULL AS balance")
+                      NULL AS balance", FALSE)
             ->join(self::T_LU_BANKS . ' lb', 'lb.id = pb.bank_name', 'left')
             ->where('pb.person_id', (int) $person_id)
             ->order_by('pb.id', 'ASC')
@@ -464,7 +464,7 @@ class Person_model extends CI_Model
                       pa.moveable_immovable,
                       pa.since_year,
                       pa.asset_acquired_how,
-                      pa.file_link")
+                      pa.file_link", FALSE)
             ->where('pa.person_id', (int) $person_id)
             ->order_by('pa.id', 'ASC')
             ->get(self::T_PERSON_ASSETS . ' pa')
@@ -494,7 +494,7 @@ class Person_model extends CI_Model
                       ppn.contact_type,
                       ppn.sim_activated_at,
                       ppn.sim_last_used_at,
-                      NULL AS remarks")
+                      NULL AS remarks", FALSE)
             ->join(self::T_MOBILE_COMPANIES . ' mc', 'mc.mnc = ppn.mnc', 'left')
             ->where('ppn.person_id', (int) $person_id)
             ->order_by('ppn.id', 'ASC')
@@ -523,7 +523,7 @@ class Person_model extends CI_Model
                       rp.father_name,
                       COALESCE(rpi.cnic_number, rpi.cnic_number_foreigner, '') AS cnic,
                       NULL AS contact,
-                      NULL AS remarks")
+                      NULL AS remarks", FALSE)
             ->join(self::T_LU_RELATION  . ' lrt', 'lrt.id = pr.person_relation_type',  'left')
             ->join(self::T_PERSONS      . ' rp',  'rp.person_id = pr.relation_with',   'left')
             ->join(self::T_PERSON_INITIATE . ' rpi', 'rpi.person_id = pr.relation_with', 'left')
@@ -554,7 +554,7 @@ class Person_model extends CI_Model
                       NULL AS offence,
                       pcr.sections_applied AS section,
                       pcr.case_position,
-                      pcr.accused_position")
+                      pcr.accused_position", FALSE)
             ->join(self::T_POLICE_STATIONS . ' ps', 'ps.ps_id = pcr.police_station_id', 'left')
             ->join(self::T_DISTRICT        . ' d',  'd.district_id = ps.district_id',   'left')
             ->where('pcr.person_id', (int) $person_id)
@@ -584,7 +584,7 @@ class Person_model extends CI_Model
                       NULL AS name,
                       NULL AS role,
                       NULL AS from_date,
-                      NULL AS to_date")
+                      NULL AS to_date", FALSE)
             ->where('pa.person_id', (int) $person_id)
             ->order_by('pa.id', 'ASC')
             ->get(self::T_PERSON_AFFILIATIONS . ' pa')
@@ -621,7 +621,7 @@ class Person_model extends CI_Model
                       NULL AS role,
                       NULL AS start_date,
                       NULL AS end_date,
-                      COALESCE(ip.project_status, 0) AS status_id")
+                      COALESCE(ip.project_status, 0) AS status_id", FALSE)
             ->join(self::T_INT_PROJECTS . ' ip', 'ip.id = plp.project_id', 'left')
             ->where('plp.person_id', (int) $person_id)
             ->group_by('plp.project_id')
@@ -682,7 +682,7 @@ class Person_model extends CI_Model
                       pr.report_details AS summary,
                       pr.file_link,
                       NULL AS reported_by,
-                      NULL AS status")
+                      NULL AS status", FALSE)
             ->where('pr.person_id', (int) $person_id)
             ->order_by('pr.report_date', 'DESC')
             ->get(self::T_PERSON_REPORTS . ' pr')
