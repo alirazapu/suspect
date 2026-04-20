@@ -44,6 +44,7 @@ class Sso_token
         // 1. Already logged in via session?
         // ------------------------------------------------------------------
         if ($this->CI->session->userdata('user_id')) {
+            log_message('debug', 'Sso_token::check – authenticated via session (user_id=' . $this->CI->session->userdata('user_id') . ') for URI: ' . $uri);
             return; // authenticated
         }
 
@@ -59,6 +60,7 @@ class Sso_token
             // Sanitize: token column is varchar(40), reject if length is wrong
             $token = trim($token);
             if (strlen($token) > 40) {
+                log_message('error', 'Sso_token::check – token too long (' . strlen($token) . ' chars), rejecting.');
                 $token = '';
             }
         }
@@ -80,9 +82,14 @@ class Sso_token
                     ->row();
 
                 if ($user) {
+                    log_message('info', 'Sso_token::check – valid token, establishing session for user_id=' . $user->id);
                     $this->_set_user_session($user);
                     return; // authenticated, let request continue
                 }
+
+                log_message('error', 'Sso_token::check – token valid but user_id=' . $row->user_id . ' not found in users table.');
+            } else {
+                log_message('info', 'Sso_token::check – token present but invalid/expired for URI: ' . $uri);
             }
 
             // Token is present but invalid/expired — fall through to redirect
@@ -103,6 +110,7 @@ class Sso_token
             }
         }
 
+        log_message('info', 'Sso_token::check – no session/token, saving redirect_after_login=' . $current_url . ' and redirecting to auth/login.');
         $this->CI->session->set_userdata('redirect_after_login', $current_url);
         redirect('auth/login');
         exit;

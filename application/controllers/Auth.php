@@ -33,6 +33,7 @@ class Auth extends CI_Controller
     {
         // Already logged in? Send home.
         if ($this->session->userdata('user_id')) {
+            log_message('debug', 'Auth::login – already logged in (user_id=' . $this->session->userdata('user_id') . '), redirecting.');
             $this->_redirect_after_login();
             return;
         }
@@ -46,6 +47,7 @@ class Auth extends CI_Controller
             if (empty($login) || empty($password)) {
                 $data['error'] = 'Please enter your username/email and password.';
             } else {
+                log_message('debug', 'Auth::login – attempting login for: ' . $login);
                 $user = $this->User_model->login($login, $password);
 
                 if ($user) {
@@ -57,10 +59,12 @@ class Auth extends CI_Controller
                         'name'      => isset($user->name)     ? $user->name     : '',
                         'logged_in' => TRUE,
                     ));
+                    log_message('info', 'Auth::login – session established for user_id=' . $user->id);
 
                     $this->_redirect_after_login();
                     return;
                 } else {
+                    log_message('info', 'Auth::login – failed login attempt for: ' . $login);
                     $data['error'] = 'Invalid username/email or password.';
                 }
             }
@@ -107,8 +111,10 @@ class Auth extends CI_Controller
         session_write_close();
 
         if ( ! empty($url) && ! $is_login_url) {
+            log_message('debug', 'Auth::_redirect_after_login – redirecting to stored URL: ' . $url);
             redirect($url);
         } else {
+            log_message('debug', 'Auth::_redirect_after_login – redirecting to default dashboard (persons). stored_url=' . (empty($url) ? '(empty)' : $url));
             redirect('persons');
         }
     }

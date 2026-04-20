@@ -222,7 +222,14 @@ $config['directory_trigger'] = 'd';
 | your log files will fill up very fast.
 |
 */
-$config['log_threshold'] = 0;
+/*
+ * Logging threshold is environment-aware so that the dev server captures
+ * everything while production only records hard errors.
+ *
+ * CI3 threshold levels:
+ *   0 = Disabled  1 = Errors  2 = Debug  3 = Info  4 = All
+ */
+$config['log_threshold'] = (ENVIRONMENT === 'development') ? 4 : 1;
 
 /*
 |--------------------------------------------------------------------------
@@ -233,7 +240,7 @@ $config['log_threshold'] = 0;
 | application/logs/ directory. Use a full server path with trailing slash.
 |
 */
-$config['log_path'] = '';
+$config['log_path'] = APPPATH . 'logs/';
 
 /*
 |--------------------------------------------------------------------------
