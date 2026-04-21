@@ -196,7 +196,7 @@
         var psOpts = '<option value="">— Select District First —</option>';
         if (d.police_station_id) {
             psOpts = '<option value="' + escHtml(d.police_station_id) + '" selected>'
-                + 'Police Station #' + escHtml(d.police_station_id) + '</option>';
+                + escHtml(d.police_station_name || 'Station #' + d.police_station_id) + '</option>';
         }
 
         var html = '<form id="basicinfoForm" class="mt-3">';
@@ -262,7 +262,7 @@
         var tempPsOpts = '<option value="">— Select District First —</option>';
         if (d.police_station_id) {
             tempPsOpts = '<option value="' + escHtml(d.police_station_id) + '" selected>'
-                + 'Police Station #' + escHtml(d.police_station_id) + '</option>';
+                + escHtml(d.police_station_name || 'Station #' + d.police_station_id) + '</option>';
         }
 
         var html = '<form id="detailInfoForm" class="mt-3">';
@@ -544,7 +544,7 @@
                 loadTab(target, BASE + 'api/persons/' + PID + '/identities', function (d) {
                     return dataTable(d, [
                         {key: 'identity_type', label: 'Identity Type'},
-                        {key: 'identity_no',   label: 'Number'}
+                        {key: 'identity_no',   label: 'Identity Number'}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}

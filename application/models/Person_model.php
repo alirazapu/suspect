@@ -543,10 +543,10 @@ class Person_model extends CI_Model
             ->get(self::T_PERSON_MOBILES . ' ppn')
             ->result_array();
 
+        $contact_types = array(1 => 'Personal', 2 => 'WhatsApp', 3 => 'Official', 4 => 'Other');
         foreach ($rows as &$r) {
             $r['status_label'] = $r['status'] ? 'Active' : 'Inactive';
             $r['connection_type_label'] = $r['connection_type'] ? 'Pre-Paid' : 'Post-Paid';
-            $contact_types = array(1 => 'Personal', 2 => 'WhatsApp', 3 => 'Official', 4 => 'Other');
             $r['contact_type_label'] = isset($contact_types[$r['contact_type']]) ? $contact_types[$r['contact_type']] : '';
         }
 
