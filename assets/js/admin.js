@@ -740,7 +740,11 @@
                         + '<i class="fas fa-plus mr-1"></i>Add Training</button></div>';
 
                     var affHtml = dataTable(affData, [
-                        {key: 'organization_id',   label: 'Organization ID'},
+                        {key: 'organization_name', label: 'Organization',
+                            render: function (r) {
+                                var n = r.organization_name || '';
+                                return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
+                            }},
                         {key: 'ideological_stance',label: 'Ideological Stance'},
                         {key: 'designation',       label: 'Designation'},
                         {key: 'is_trained',        label: 'Trained',
@@ -1155,7 +1159,9 @@
                 label: 'Affiliation',
                 saveAction: 'update_affiliations',
                 fields: [
-                    {name: 'organization_id',          label: 'Organization ID', type: 'number'},
+                    {name: 'organization_id', dataKey: 'organization_id', label: 'Organization', type: 'select',
+                        lookupKey: 'organizations', lookupId: 'org_id', lookupLabel: 'org_name',
+                        options: []},
                     {name: 'ideological_stance',       label: 'Ideological Stance', type: 'select', options: [
                         {value: 'Jihadi',       label: 'Jihadi'},
                         {value: 'Sectarian',    label: 'Sectarian'},

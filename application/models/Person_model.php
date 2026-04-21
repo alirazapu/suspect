@@ -50,6 +50,7 @@ class Person_model extends CI_Model
     const T_LU_CASTE            = 'lu_caste';
     const T_LU_COUNTRY          = 'lu_country';
     const T_LU_MARITAL          = 'lu_marital_status';
+    const T_ORGANIZATIONS       = 'banned_organizations';
     const T_MOBILE_COMPANIES    = 'mobile_companies';
     const T_POLICE_STATIONS     = 'police_stations';
     const T_DISTRICT            = 'district';
@@ -270,6 +271,15 @@ class Person_model extends CI_Model
     public function get_castes()
     {
         return $this->db->order_by('caste', 'ASC')->get(self::T_LU_CASTE)->result_array();
+    }
+
+    public function get_organizations()
+    {
+        return $this->db
+            ->select('org_id, org_name')
+            ->order_by('org_name', 'ASC')
+            ->get(self::T_ORGANIZATIONS)
+            ->result_array();
     }
 
     /**
@@ -691,12 +701,13 @@ class Person_model extends CI_Model
 
     /**
      * Affiliations tab (organization + ideological stance + designation).
-     * admin.js keys: affiliation_type, name, role, from_date, to_date, remarks
+     * admin.js keys: organization_name, ideological_stance, designation, is_trained, remarks
      */
     public function get_affiliations($person_id)
     {
         $rows = $this->db
             ->select("pa.id, pa.person_id, pa.organization_id,
+                      COALESCE(bo.org_name, '') AS organization_name,
                       pa.ideological_stance,
                       pa.designation, pa.details AS remarks,
                       pa.self_recruitment_details, pa.is_trained,
@@ -705,6 +716,7 @@ class Person_model extends CI_Model
                       NULL AS role,
                       NULL AS from_date,
                       NULL AS to_date", FALSE)
+            ->join(self::T_ORGANIZATIONS . ' bo', 'bo.org_id = pa.organization_id', 'left')
             ->where('pa.person_id', (int) $person_id)
             ->order_by('pa.id', 'ASC')
             ->get(self::T_PERSON_AFFILIATIONS . ' pa')

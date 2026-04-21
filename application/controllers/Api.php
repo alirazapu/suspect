@@ -81,6 +81,7 @@ class Api extends CI_Controller
                 'education_levels' => $this->Person_model->get_education_levels(),
                 'identity_types'   => $this->Person_model->get_identity_types(),
                 'relation_types'   => $this->Person_model->get_relation_types(),
+                'organizations'    => $this->Person_model->get_organizations(),
             );
             $this->_ok($data);
         } catch (Exception $e) {
