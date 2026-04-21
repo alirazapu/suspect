@@ -84,6 +84,7 @@ $route['api/persons/(:num)/trainings']          = 'api/persons_trainings/$1';
 $route['api/persons/(:num)/projects']           = 'api/persons_projects/$1';
 $route['api/persons/(:num)/category_history']   = 'api/persons_category_history/$1';
 $route['api/persons/(:num)/reports']            = 'api/persons_reports/$1';
+$route['api/persons/(:num)/name_cnic']          = 'api/persons_name_cnic/$1';
 
 // Personprofile write endpoints (POST) — mirrors dramslive action names
 $route['personprofile/get_district']            = 'personprofile/get_district';
@@ -111,3 +112,4 @@ $route['personprofile/update_personincomesource'] = 'personprofile/update_person
 $route['personprofile/deletesource']            = 'personprofile/deletesource';
 $route['personprofile/update_personreports']    = 'personprofile/update_personreports';
 $route['personprofile/deletereport']            = 'personprofile/deletereport';
+$route['personprofile/upload_doc']              = 'personprofile/upload_doc';

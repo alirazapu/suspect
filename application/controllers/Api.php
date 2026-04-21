@@ -206,7 +206,7 @@ class Api extends CI_Controller
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
         try {
-            $this->_ok($this->Person_model->get_criminal($pid));
+            $this->_ok($this->Person_model->get_criminal_with_district($pid));
         } catch (Exception $e) {
             log_message('error', 'Api::persons_criminal pid=' . $pid . ' – ' . $e->getMessage());
             $this->_ok(array());
@@ -289,5 +289,21 @@ class Api extends CI_Controller
         $total   = $this->Person_model->count_persons($filters);
 
         $this->_ok(array('results' => $results, 'total' => $total));
+    }
+
+    /**
+     * GET /api/persons/:id/name_cnic
+     * Returns { name, cnic } for a given person_id — used by the Relations form.
+     */
+    public function persons_name_cnic($person_id = NULL)
+    {
+        $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
+        if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
+        $row = $this->Person_model->get_person_name_cnic($pid);
+        if ($row) {
+            $this->_ok($row);
+        } else {
+            $this->_error('Person not found.', 404);
+        }
     }
 }

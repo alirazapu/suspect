@@ -272,9 +272,69 @@ class Person_model extends CI_Model
         return $this->db->order_by('caste', 'ASC')->get(self::T_LU_CASTE)->result_array();
     }
 
-    // ==================================================================
-    // Profile header
-    // ==================================================================
+    /**
+     * Quick person lookup — returns name + CNIC for a given person_id.
+     * Used by the Relations tab to show the related person's name readonly.
+     */
+    public function get_person_name_cnic($person_id)
+    {
+        $row = $this->db
+            ->select("p.person_id,
+                      TRIM(CONCAT(COALESCE(p.first_name,''),' ',COALESCE(p.middle_name,''),' ',COALESCE(p.last_name,''))) AS name,
+                      COALESCE(pi.cnic_number, pi.cnic_number_foreigner, '') AS cnic")
+            ->join(self::T_PERSON_INITIATE . ' pi', 'pi.person_id = p.person_id', 'left')
+            ->where('p.person_id', (int) $person_id)
+            ->where('p.is_deleted', 0)
+            ->get(self::T_PERSONS . ' p')
+            ->row_array();
+        return $row ?: null;
+    }
+
+    /**
+     * Get criminal records including district_id for the form cascade.
+     */
+    public function get_criminal_with_district($person_id)
+    {
+        $case_positions = array(
+            1 => 'Under Investigation', 2 => 'Under Trial',
+            3 => 'Convicted', 4 => 'Discharged',
+        );
+        $accused_positions = array(
+            1 => 'Main Accused', 2 => 'Co-Accused', 3 => 'Absconder',
+            4 => 'Suspect',      5 => 'Witness',    6 => 'Arrested',
+        );
+
+        $rows = $this->db
+            ->select("pcr.id, pcr.person_id,
+                      pcr.fir_number,
+                      pcr.police_station_id,
+                      COALESCE(ps.ps_name, '') AS police_station,
+                      COALESCE(ps.district_id, 0) AS district_id,
+                      COALESCE(d.name, '') AS district,
+                      COALESCE(d.region_id, 0) AS region_id,
+                      COALESCE(r.name, '') AS region,
+                      pcr.fir_date AS case_date,
+                      NULL AS offence,
+                      pcr.sections_applied AS section,
+                      pcr.case_position,
+                      pcr.accused_position", FALSE)
+            ->join(self::T_POLICE_STATIONS . ' ps', 'ps.ps_id = pcr.police_station_id', 'left')
+            ->join(self::T_DISTRICT        . ' d',  'd.district_id = ps.district_id',   'left')
+            ->join(self::T_REGION          . ' r',  'r.region_id = d.region_id',        'left')
+            ->where('pcr.person_id', (int) $person_id)
+            ->order_by('pcr.id', 'ASC')
+            ->get(self::T_PERSON_CRIMINAL . ' pcr')
+            ->result_array();
+
+        foreach ($rows as &$r) {
+            $r['status'] = isset($case_positions[$r['case_position']])
+                ? $case_positions[$r['case_position']] : '';
+            $r['accused_position_label'] = isset($accused_positions[$r['accused_position']])
+                ? $accused_positions[$r['accused_position']] : '';
+        }
+
+        return $rows ?: array();
+    }
 
     /**
      * Full row for the profile header card — includes CNIC, category, photo URL.
@@ -471,7 +531,8 @@ class Person_model extends CI_Model
     {
         $rows = $this->db
             ->select("pb.id, pb.person_id,
-                      COALESCE(lb.name, '') AS bank_name,
+                      pb.bank_name AS bank_id,
+                      COALESCE(lb.name, '') AS bank_display,
                       pb.branch_name AS branch,
                       pb.account_number,
                       pb.atm_number,
@@ -625,7 +686,9 @@ class Person_model extends CI_Model
     public function get_affiliations($person_id)
     {
         $rows = $this->db
-            ->select("pa.id, pa.person_id, pa.organization_id, pa.ideological_stance,
+            ->select("pa.id, pa.person_id, pa.organization_id,
+                      COALESCE(pa.organization_name, '') AS organization_name,
+                      pa.ideological_stance,
                       pa.designation, pa.details AS remarks,
                       pa.self_recruitment_details, pa.is_trained,
                       NULL AS affiliation_type,
@@ -872,18 +935,19 @@ class Person_model extends CI_Model
     {
         $pid     = (int) $person_id;
         $allowed = array('id', 'asset_name', 'details', 'moveable_immovable',
-                         'since_year', 'asset_value', 'asset_acquired_how', 'asset_type');
+                         'since_year', 'asset_value', 'asset_acquired_how', 'asset_type', 'file_link');
         $row     = array_intersect_key($data, array_flip($allowed));
         $row['person_id'] = $pid;
 
         if ( ! empty($data['id'])) {
             $this->db->where('id', (int)$data['id'])->where('person_id', $pid)
                      ->update(self::T_PERSON_ASSETS, $row);
+            return (int) $data['id'];
         } else {
             unset($row['id']);
             $this->db->insert(self::T_PERSON_ASSETS, $row);
+            return (int) $this->db->insert_id();
         }
-        return $this->db->affected_rows() >= 0;
     }
 
     public function delete_asset($id, $person_id)
@@ -973,7 +1037,7 @@ class Person_model extends CI_Model
     public function insert_update_affiliation($data, $person_id)
     {
         $pid     = (int) $person_id;
-        $allowed = array('id', 'organization_id', 'ideological_stance', 'details',
+        $allowed = array('id', 'organization_id', 'organization_name', 'ideological_stance', 'details',
                          'self_recruitment_details', 'is_trained', 'designation');
         $row     = array_intersect_key($data, array_flip($allowed));
         $row['person_id'] = $pid;
@@ -1028,18 +1092,19 @@ class Person_model extends CI_Model
     public function insert_update_income($data, $person_id)
     {
         $pid     = (int) $person_id;
-        $allowed = array('id', 'income_source_name', 'details', 'income_source_duration', 'income_amount');
+        $allowed = array('id', 'income_source_name', 'details', 'income_source_duration', 'income_amount', 'file_link');
         $row     = array_intersect_key($data, array_flip($allowed));
         $row['person_id'] = $pid;
 
         if ( ! empty($data['id'])) {
             $this->db->where('id', (int)$data['id'])->where('person_id', $pid)
                      ->update(self::T_PERSON_INCOME, $row);
+            return (int) $data['id'];
         } else {
             unset($row['id']);
             $this->db->insert(self::T_PERSON_INCOME, $row);
+            return (int) $this->db->insert_id();
         }
-        return $this->db->affected_rows() >= 0;
     }
 
     public function delete_income($id, $person_id)
@@ -1054,18 +1119,19 @@ class Person_model extends CI_Model
     public function insert_update_report($data, $person_id)
     {
         $pid     = (int) $person_id;
-        $allowed = array('id', 'report_type', 'report_reference_no', 'report_date', 'report_details');
+        $allowed = array('id', 'report_type', 'report_reference_no', 'report_date', 'report_details', 'file_link');
         $row     = array_intersect_key($data, array_flip($allowed));
         $row['person_id'] = $pid;
 
         if ( ! empty($data['id'])) {
             $this->db->where('id', (int)$data['id'])->where('person_id', $pid)
                      ->update(self::T_PERSON_REPORTS, $row);
+            return (int) $data['id'];
         } else {
             unset($row['id']);
             $this->db->insert(self::T_PERSON_REPORTS, $row);
+            return (int) $this->db->insert_id();
         }
-        return $this->db->affected_rows() >= 0;
     }
 
     public function delete_report($id, $person_id)

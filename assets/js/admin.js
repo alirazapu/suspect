@@ -582,7 +582,12 @@
                         {key: 'source_type',    label: 'Source'},
                         {key: 'description',    label: 'Description'},
                         {key: 'monthly_amount', label: 'Amount (PKR)'},
-                        {key: 'duration_label', label: 'Duration'}
+                        {key: 'duration_label', label: 'Duration'},
+                        {key: 'file_link',      label: 'Document', render: function (r) {
+                            return r.file_link
+                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-file mr-1"></i>View</a>'
+                                : '<em class="text-muted">—</em>';
+                        }}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -597,7 +602,7 @@
             case '#tab-banks':
                 loadTab(target, BASE + 'api/persons/' + PID + '/banks', function (d) {
                     return dataTable(d, [
-                        {key: 'bank_name',      label: 'Bank'},
+                        {key: 'bank_display',   label: 'Bank'},
                         {key: 'branch',         label: 'Branch'},
                         {key: 'account_number', label: 'Account No.'},
                         {key: 'atm_number',     label: 'ATM No.'},
@@ -622,7 +627,12 @@
                         {key: 'moveable_label', label: 'Type'},
                         {key: 'value',          label: 'Value (PKR)'},
                         {key: 'since_year',     label: 'Since'},
-                        {key: 'asset_acquired_how', label: 'Acquired How'}
+                        {key: 'asset_acquired_how', label: 'Acquired How'},
+                        {key: 'file_link', label: 'Document', render: function (r) {
+                            return r.file_link
+                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-file mr-1"></i>View</a>'
+                                : '<em class="text-muted">—</em>';
+                        }}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -679,12 +689,13 @@
             case '#tab-criminal':
                 loadTab(target, BASE + 'api/persons/' + PID + '/criminal', function (d) {
                     return dataTable(d, [
-                        {key: 'fir_number',     label: 'FIR No.'},
-                        {key: 'police_station', label: 'Police Station'},
-                        {key: 'district',       label: 'District'},
-                        {key: 'case_date',      label: 'FIR Date'},
-                        {key: 'section',        label: 'Section(s)'},
-                        {key: 'status',         label: 'Status'}
+                        {key: 'fir_number',             label: 'FIR No.'},
+                        {key: 'police_station',         label: 'Police Station'},
+                        {key: 'district',               label: 'District'},
+                        {key: 'case_date',              label: 'FIR Date'},
+                        {key: 'section',                label: 'Section(s)'},
+                        {key: 'status',                 label: 'Case Status'},
+                        {key: 'accused_position_label', label: 'Accused As'}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -719,8 +730,14 @@
                         + '<i class="fas fa-plus mr-1"></i>Add Training</button></div>';
 
                     var affHtml = dataTable(affData, [
-                        {key: 'organization_id',   label: 'Organization ID'},
-                        {key: 'ideological_stance',label: 'Stance'},
+                        {key: 'organization_name', label: 'Organization',
+                            render: function (r) {
+                                var n = r.organization_name || '';
+                                var id = r.organization_id || '';
+                                if (n) return escHtml(n) + (id ? ' <small class="text-muted">(#' + escHtml(id) + ')</small>' : '');
+                                return id ? '#' + escHtml(id) : '<em class="text-muted">—</em>';
+                            }},
+                        {key: 'ideological_stance',label: 'Ideological Stance'},
                         {key: 'designation',       label: 'Designation'},
                         {key: 'is_trained',        label: 'Trained',
                             render: function (r) { return r.is_trained ? 'Yes' : 'No'; }},
@@ -775,7 +792,12 @@
                         {key: 'report_type_label', label: 'Report Type'},
                         {key: 'report_reference_no', label: 'Ref No.'},
                         {key: 'report_date',       label: 'Date'},
-                        {key: 'summary',           label: 'Details'}
+                        {key: 'summary',           label: 'Details'},
+                        {key: 'file_link', label: 'Attachment', render: function (r) {
+                            return r.file_link
+                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-paperclip mr-1"></i>View</a>'
+                                : '<em class="text-muted">—</em>';
+                        }}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -858,24 +880,27 @@
         if ( ! $wrap.length) return;
 
         loadLookups(function (lk) {
-            var formHtml = '<form id="inlineEditForm"'
+            var formHtml = '<form id="inlineEditForm" enctype="multipart/form-data"'
                 + ' data-save-action="' + escHtml(config.saveAction) + '"'
-                + ' data-reload-tab="' + escHtml(reloadTabId) + '">';
+                + ' data-reload-tab="' + escHtml(reloadTabId) + '"'
+                + ' data-has-file="' + (config.hasFileUpload ? '1' : '0') + '">';
             formHtml += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
             if (row.id) {
                 formHtml += '<input type="hidden" name="id" value="' + escHtml(row.id) + '">';
             }
             formHtml += '<div class="row">';
             $.each(config.fields, function (_, f) {
-                var val = (row[f.name] !== undefined && row[f.name] !== null) ? row[f.name] : '';
-                var colClass = (f.type === 'textarea') ? 'col-12' : 'col-md-6';
+                // dataKey allows the form field name to differ from the row-data key
+                var dataKey = f.dataKey || f.name;
+                var val = (row[dataKey] !== undefined && row[dataKey] !== null) ? row[dataKey] : '';
+                var colClass = (f.type === 'textarea' || f.type === 'person-lookup'
+                    || f.type === 'criminal-ps-cascade') ? 'col-12' : 'col-md-6';
                 formHtml += '<div class="form-group ' + colClass + ' mb-2">';
                 formHtml += '<label class="font-weight-bold small mb-1">' + escHtml(f.label) + '</label>';
 
                 if (f.type === 'textarea') {
                     formHtml += '<textarea class="form-control form-control-sm" name="' + escHtml(f.name) + '" rows="3">' + escHtml(val) + '</textarea>';
                 } else if (f.type === 'select') {
-                    // Use LOOKUPS data when available, fall back to hardcoded options
                     var opts = f.options || [];
                     if (f.lookupKey && lk && lk[f.lookupKey] && lk[f.lookupKey].length) {
                         opts = $.map(lk[f.lookupKey], function (item) {
@@ -889,6 +914,51 @@
                         formHtml += '<option value="' + escHtml(opt.value) + '"' + sel + '>' + escHtml(opt.label) + '</option>';
                     });
                     formHtml += '</select>';
+                } else if (f.type === 'file') {
+                    // Show existing file link if any
+                    if (row.file_link) {
+                        formHtml += '<div class="mb-1 small text-muted">'
+                            + 'Current: <a href="' + escHtml(BASE + row.file_link) + '" target="_blank">'
+                            + '<i class="fas fa-file mr-1"></i>View Document</a></div>';
+                    }
+                    formHtml += '<input type="file" class="form-control-file form-control-sm" name="document">';
+                } else if (f.type === 'readonly') {
+                    formHtml += '<input type="text" class="form-control form-control-sm bg-light" readonly value="' + escHtml(val) + '">';
+                    formHtml += '<input type="hidden" name="' + escHtml(f.name) + '" value="' + escHtml(val) + '">';
+                } else if (f.type === 'person-lookup') {
+                    // Related person search: text search → fills person_id, shows name+cnic readonly
+                    var currentName = (row.name || '').trim() + (row.cnic ? ' (' + row.cnic + ')' : '');
+                    formHtml += '<div class="input-group input-group-sm mb-1">'
+                        + '<input type="number" id="relPersonId" class="form-control form-control-sm" name="relation_with"'
+                        + ' placeholder="Enter person ID" value="' + escHtml(row.relation_with || '') + '" min="1">'
+                        + '<div class="input-group-append">'
+                        + '<button type="button" class="btn btn-outline-secondary btn-sm" id="btnLookupPerson">'
+                        + '<i class="fas fa-search"></i></button>'
+                        + '</div></div>'
+                        + '<div id="relPersonDisplay" class="form-control form-control-sm bg-light text-muted small"'
+                        + ' style="min-height:32px">'
+                        + escHtml(currentName || 'Enter ID and click Search')
+                        + '</div>';
+                } else if (f.type === 'criminal-ps-cascade') {
+                    // Region → District → Police Station cascade for criminal form
+                    var regionOpts = buildOptions(lk.regions || [], 'region_id', 'name', row.region_id);
+                    formHtml += '<div class="row no-gutters">'
+                        + '<div class="col-md-4 pr-1">'
+                        + '<label class="small font-weight-bold">Region</label>'
+                        + '<select class="form-control form-control-sm" id="crimRegionSel">' + regionOpts + '</select>'
+                        + '</div>'
+                        + '<div class="col-md-4 pr-1">'
+                        + '<label class="small font-weight-bold">District</label>'
+                        + '<select class="form-control form-control-sm" id="crimDistrictSel" name="_district_id">'
+                        + '<option value="">— Select Region First —</option>'
+                        + '</select>'
+                        + '</div>'
+                        + '<div class="col-md-4">'
+                        + '<label class="small font-weight-bold">Police Station</label>'
+                        + '<select class="form-control form-control-sm" name="police_station_id" id="crimPsSel">'
+                        + '<option value="">— Select District First —</option>'
+                        + '</select>'
+                        + '</div></div>';
                 } else {
                     formHtml += '<input type="' + (f.type || 'text') + '" class="form-control form-control-sm" name="'
                         + escHtml(f.name) + '" value="' + escHtml(val) + '">';
@@ -909,6 +979,28 @@
             $(paneId).find('.tab-add-btn-wrap[data-tab="' + tab + '"]').hide();
             // Init Select2 on any selects in the form
             initSelect2($wrap[0]);
+
+            // For criminal form: pre-populate police-station cascade from saved row data
+            if (tab === '#tab-criminal' && row.region_id) {
+                loadDistrictCascade('#crimDistrictSel', row.region_id, row.district_id, function () {
+                    if (row.district_id) {
+                        loadPoliceCascade('#crimPsSel', row.district_id, row.police_station_id);
+                    }
+                });
+                initSelect2($wrap[0]);
+            }
+
+            // For relation form: if we already have a name from the row data show it
+            if (tab === '#tab-relations' && row.relation_with) {
+                // name/cnic already shown; do a live lookup to confirm
+                $.getJSON(BASE + 'api/persons/' + row.relation_with + '/name_cnic', function (resp) {
+                    if (resp && resp.status === 'ok' && resp.data) {
+                        var d = resp.data;
+                        var display = d.name + (d.cnic ? ' (' + d.cnic + ')' : '');
+                        $('#relPersonDisplay').text(display).removeClass('text-muted').addClass('text-dark');
+                    }
+                });
+            }
         });
     }
 
@@ -951,25 +1043,27 @@
             '#tab-income': {
                 label: 'Income Source',
                 saveAction: 'update_personincomesource',
+                hasFileUpload: true,
                 fields: [
                     {name: 'income_source_name', label: 'Source Name'},
                     {name: 'details',            label: 'Description', type: 'textarea'},
                     {name: 'income_amount',      label: 'Amount (PKR)', type: 'number'},
                     {name: 'income_source_duration', label: 'Duration', type: 'select', options: [
                         {value: 1, label: 'Daily'}, {value: 2, label: 'Monthly'}, {value: 3, label: 'Yearly'}
-                    ]}
+                    ]},
+                    {name: 'document', label: 'Supporting Document', type: 'file'}
                 ]
             },
             '#tab-banks': {
                 label: 'Bank Account',
                 saveAction: 'update_banks',
                 fields: [
-                    {name: 'bank_name', label: 'Bank', type: 'select',
+                    {name: 'bank_name', dataKey: 'bank_id', label: 'Bank', type: 'select',
                         lookupKey: 'banks', lookupId: 'id', lookupLabel: 'name',
                         options: []},
                     {name: 'account_number',     label: 'Account No.'},
                     {name: 'atm_number',         label: 'ATM No.'},
-                    {name: 'branch_name',        label: 'Branch'},
+                    {name: 'branch_name',        label: 'Branch', dataKey: 'branch'},
                     {name: 'is_internet_banking', label: 'Internet Banking', type: 'select', options: [
                         {value: 0, label: 'No'}, {value: 1, label: 'Yes'}
                     ]}
@@ -978,6 +1072,7 @@
             '#tab-assets': {
                 label: 'Asset',
                 saveAction: 'update_personassets',
+                hasFileUpload: true,
                 fields: [
                     {name: 'asset_name',          label: 'Asset Name'},
                     {name: 'details',             label: 'Description', type: 'textarea'},
@@ -986,7 +1081,8 @@
                     ]},
                     {name: 'asset_value',         label: 'Value (PKR)', type: 'number'},
                     {name: 'since_year',          label: 'Since (Year)', type: 'number'},
-                    {name: 'asset_acquired_how',  label: 'Acquired How'}
+                    {name: 'asset_acquired_how',  label: 'Acquired How'},
+                    {name: 'document',            label: 'Supporting Document', type: 'file'}
                 ]
             },
             '#tab-mobiles': {
@@ -1013,7 +1109,7 @@
                 label: 'Relation',
                 saveAction: 'update_relations',
                 fields: [
-                    {name: 'relation_with',       label: 'Related Person ID', type: 'number'},
+                    {name: 'relation_with', label: 'Related Person (ID + Search)', type: 'person-lookup'},
                     {name: 'person_relation_type', label: 'Relation Type', type: 'select',
                         lookupKey: 'relation_types', lookupId: 'id', lookupLabel: 'relation_name',
                         options: [
@@ -1038,7 +1134,7 @@
                 fields: [
                     {name: 'fir_number',        label: 'FIR Number'},
                     {name: 'fir_date',          label: 'FIR Date', type: 'date'},
-                    {name: 'police_station_id', label: 'Police Station', type: 'number'},
+                    {name: 'police_station_id', label: 'Police Station', type: 'criminal-ps-cascade'},
                     {name: 'sections_applied',  label: 'Sections Applied'},
                     {name: 'case_position', label: 'Case Status', type: 'select', options: [
                         {value: 1, label: 'Under Investigation'}, {value: 2, label: 'Under Trial'},
@@ -1055,7 +1151,8 @@
                 label: 'Affiliation',
                 saveAction: 'update_affiliations',
                 fields: [
-                    {name: 'organization_id',          label: 'Organization ID', type: 'number'},
+                    {name: 'organization_name',        label: 'Organization Name'},
+                    {name: 'organization_id',          label: 'Organization ID (if known)', type: 'number'},
                     {name: 'ideological_stance',       label: 'Ideological Stance', type: 'select', options: [
                         {value: 'Jihadi',       label: 'Jihadi'},
                         {value: 'Sectarian',    label: 'Sectarian'},
@@ -1103,6 +1200,7 @@
             '#tab-reports': {
                 label: 'Report',
                 saveAction: 'update_personreports',
+                hasFileUpload: true,
                 fields: [
                     {name: 'report_type', label: 'Report Type', type: 'select', options: [
                         {value: 1, label: 'Interrogation Report'},
@@ -1116,7 +1214,8 @@
                     ]},
                     {name: 'report_reference_no', label: 'Reference No.'},
                     {name: 'report_date',         label: 'Date', type: 'date'},
-                    {name: 'report_details',      label: 'Details', type: 'textarea'}
+                    {name: 'report_details',      label: 'Details', type: 'textarea'},
+                    {name: 'document',            label: 'Attachment', type: 'file'}
                 ]
             }
         };
@@ -1193,12 +1292,68 @@
         var $form       = $(this);
         var saveAction  = $form.data('save-action');
         var reloadTabId = $form.data('reload-tab');
-        var data = $form.serializeArray().reduce(function (obj, item) {
-            obj[item.name] = item.value; return obj;
-        }, {});
-        // Let saveRecord → reloadTab rebuild the pane (which hides the form wrapper again).
-        // Don't slide up early so users can see/retry if save fails.
-        saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId);
+        var hasFile     = $form.data('has-file') === '1' || $form.data('has-file') === 1;
+        var $fileInput  = $form.find('input[type="file"][name="document"]');
+        var hasActualFile = hasFile && $fileInput.length && $fileInput[0].files && $fileInput[0].files.length > 0;
+
+        if (hasActualFile) {
+            // Use FormData to support file uploads
+            var fd = new FormData($form[0]);
+            // Remove the file from main save; we do a two-step: save record first, then upload
+            fd.delete('document');
+            var $btn = $form.find('[type="submit"]');
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: BASE + 'personprofile/' + saveAction,
+                method: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function (resp) {
+                    if (resp && resp.status === 'ok') {
+                        // Now upload the file
+                        var tabName = reloadTabId.replace('#tab-', '');
+                        // Map tab id to upload tab name
+                        var tabUploadMap = {'income': 'income', 'assets': 'assets', 'reports': 'reports'};
+                        var uploadTabName = tabUploadMap[tabName] || tabName;
+                        var uploadFd = new FormData();
+                        uploadFd.append('pid', $form.find('[name="pid"]').val());
+                        uploadFd.append('tab', uploadTabName);
+                        if (resp.insert_id) uploadFd.append('id', resp.insert_id);
+                        else if ($form.find('[name="id"]').val()) uploadFd.append('id', $form.find('[name="id"]').val());
+                        uploadFd.append('document', $fileInput[0].files[0]);
+                        $.ajax({
+                            url: BASE + 'personprofile/upload_doc',
+                            method: 'POST',
+                            data: uploadFd,
+                            processData: false,
+                            contentType: false,
+                            dataType: 'json',
+                            complete: function () {
+                                showToast('success', resp.message || 'Saved.');
+                                delete tabLoaded[reloadTabId];
+                                reloadTab(reloadTabId);
+                                $btn.prop('disabled', false);
+                            }
+                        });
+                    } else {
+                        showToast('danger', (resp && resp.message) ? resp.message : 'Save failed.');
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    showToast('danger', 'Network error. Please try again.');
+                    $btn.prop('disabled', false);
+                }
+            });
+        } else {
+            // Standard save without file
+            var data = $form.serializeArray().reduce(function (obj, item) {
+                obj[item.name] = item.value; return obj;
+            }, {});
+            saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId);
+        }
     });
 
     // Cancel button on any inline form
@@ -1209,6 +1364,67 @@
         $wrap.slideUp(200);
         // Restore the + Add button
         $(paneId).find('.tab-add-btn-wrap[data-tab="' + tab + '"]').show();
+    });
+
+    // ================================================================
+    // Person lookup — Relations tab: search by ID → show name+CNIC readonly
+    // ================================================================
+    $(document).on('click', '#btnLookupPerson', function () {
+        var pid = parseInt($('#relPersonId').val(), 10);
+        if ( ! pid || pid < 1) {
+            $('#relPersonDisplay').text('Please enter a valid person ID.').removeClass('text-dark').addClass('text-danger');
+            return;
+        }
+        $('#relPersonDisplay').text('Searching…').removeClass('text-dark text-danger').addClass('text-muted');
+        $.getJSON(BASE + 'api/persons/' + pid + '/name_cnic', function (resp) {
+            if (resp && resp.status === 'ok' && resp.data) {
+                var d = resp.data;
+                var display = d.name + (d.cnic ? ' (' + d.cnic + ')' : '');
+                $('#relPersonDisplay').text(display).removeClass('text-muted text-danger').addClass('text-dark');
+            } else {
+                $('#relPersonDisplay').text('Person not found (ID: ' + pid + ').').removeClass('text-muted text-dark').addClass('text-danger');
+            }
+        }).fail(function () {
+            $('#relPersonDisplay').text('Lookup failed. Check ID.').removeClass('text-muted text-dark').addClass('text-danger');
+        });
+    });
+
+    // Also trigger lookup when user presses Enter or Tab in the ID field
+    $(document).on('keydown', '#relPersonId', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); $('#btnLookupPerson').trigger('click'); }
+    });
+
+    // ================================================================
+    // Cascade: Criminal Record — Region → District → Police Station
+    // ================================================================
+    $(document).on('change', '#crimRegionSel', function () {
+        var regionId = $(this).val();
+        if (regionId) {
+            loadDistrictCascade('#crimDistrictSel', regionId, '', function () {
+                $('#crimPsSel').html('<option value="">— Select District First —</option>');
+            });
+        } else {
+            $('#crimDistrictSel').html('<option value="">— Select Region First —</option>');
+            $('#crimPsSel').html('<option value="">— Select District First —</option>');
+        }
+    });
+
+    $(document).on('change', '#crimDistrictSel', function () {
+        var districtId = $(this).val();
+        if (districtId) {
+            loadPoliceCascade('#crimPsSel', districtId, '');
+        } else {
+            $('#crimPsSel').html('<option value="">— Select District First —</option>');
+        }
+    });
+
+    // ================================================================
+    // Date picker — clicking anywhere in a date input opens the calendar
+    // ================================================================
+    $(document).on('click', 'input[type="date"]', function () {
+        if (typeof this.showPicker === 'function') {
+            try { this.showPicker(); } catch (ex) { /* ignore – not all browsers support */ }
+        }
     });
 
     // ================================================================

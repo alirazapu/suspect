@@ -322,8 +322,8 @@ class Personprofile extends CI_Controller
         $pid = $this->_get_pid_from_post();
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
         $data = $this->input->post(NULL, TRUE);
-        $this->Person_model->insert_update_asset($data, $pid);
-        $this->_ok('Asset record saved.');
+        $record_id = $this->Person_model->insert_update_asset($data, $pid);
+        $this->_ok('Asset record saved.', array('insert_id' => $record_id));
     }
 
     /**
@@ -485,8 +485,8 @@ class Personprofile extends CI_Controller
         $pid = $this->_get_pid_from_post();
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
         $data = $this->input->post(NULL, TRUE);
-        $this->Person_model->insert_update_income($data, $pid);
-        $this->_ok('Income source saved.');
+        $record_id = $this->Person_model->insert_update_income($data, $pid);
+        $this->_ok('Income source saved.', array('insert_id' => $record_id));
     }
 
     /**
@@ -504,6 +504,86 @@ class Personprofile extends CI_Controller
     }
 
     // ==================================================================
+    // Document upload
+    // ==================================================================
+
+    /**
+     * POST /personprofile/upload_doc
+     * Accepts a file upload and saves it under uploads/persons/<pid>/.
+     * Returns { status: 'ok', file_link: '<relative-path>' }
+     *
+     * POST fields: pid, tab (income|assets|reports), id (record id, optional)
+     */
+    public function upload_doc()
+    {
+        $pid = $this->_get_pid_from_post();
+        if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
+
+        if ( ! isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+            $this->_error('No file received or upload error.');
+            return;
+        }
+
+        $uploadDir = FCPATH . 'uploads/persons/' . $pid . '/';
+        if ( ! is_dir($uploadDir)) {
+            if ( ! mkdir($uploadDir, 0755, TRUE)) {
+                $this->_error('Cannot create upload directory.');
+                return;
+            }
+        }
+
+        // Validate file type — allow common document/image types
+        $allowedMimes = array(
+            'application/pdf', 'image/jpeg', 'image/png', 'image/gif',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($_FILES['document']['tmp_name']);
+        if ( ! in_array($mimeType, $allowedMimes, TRUE)) {
+            $this->_error('Invalid file type. Allowed: PDF, JPG, PNG, Word, Excel.');
+            return;
+        }
+
+        // Max 10 MB
+        if ($_FILES['document']['size'] > 10 * 1024 * 1024) {
+            $this->_error('File too large. Maximum size is 10 MB.');
+            return;
+        }
+
+        $ext      = pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION);
+        $filename = 'doc_' . time() . '_' . uniqid() . '.' . strtolower($ext);
+        $destPath = $uploadDir . $filename;
+
+        if ( ! move_uploaded_file($_FILES['document']['tmp_name'], $destPath)) {
+            $this->_error('Failed to save uploaded file.');
+            return;
+        }
+
+        $relPath = 'uploads/persons/' . $pid . '/' . $filename;
+
+        // If a record id + tab are given, update file_link immediately
+        $tab = $this->input->post('tab', TRUE);
+        $id  = (int) $this->input->post('id', TRUE);
+        if ($tab && $id) {
+            $tableMap = array(
+                'income'  => 'person_income_sources',
+                'assets'  => 'person_assets',
+                'reports' => 'person_reports',
+            );
+            if (isset($tableMap[$tab])) {
+                $this->db->where('id', $id)
+                         ->where('person_id', $pid)
+                         ->update($tableMap[$tab], array('file_link' => $relPath));
+            }
+        }
+
+        $this->_ok('Document uploaded.', array('file_link' => $relPath));
+    }
+
+    // ==================================================================
     // Reports
     // ==================================================================
 
@@ -516,8 +596,8 @@ class Personprofile extends CI_Controller
         $pid = $this->_get_pid_from_post();
         if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
         $data = $this->input->post(NULL, TRUE);
-        $this->Person_model->insert_update_report($data, $pid);
-        $this->_ok('Report saved.');
+        $record_id = $this->Person_model->insert_update_report($data, $pid);
+        $this->_ok('Report saved.', array('insert_id' => $record_id));
     }
 
     /**
