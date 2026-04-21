@@ -80,6 +80,7 @@ $route['api/persons/(:num)/mobiles']            = 'api/persons_mobiles/$1';
 $route['api/persons/(:num)/relations']          = 'api/persons_relations/$1';
 $route['api/persons/(:num)/criminal']           = 'api/persons_criminal/$1';
 $route['api/persons/(:num)/affiliations']       = 'api/persons_affiliations/$1';
+$route['api/persons/(:num)/affiliated_orgs']    = 'api/persons_affiliated_orgs/$1';
 $route['api/persons/(:num)/trainings']          = 'api/persons_trainings/$1';
 $route['api/persons/(:num)/projects']           = 'api/persons_projects/$1';
 $route['api/persons/(:num)/category_history']   = 'api/persons_category_history/$1';

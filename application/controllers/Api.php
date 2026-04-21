@@ -226,6 +226,18 @@ class Api extends CI_Controller
         }
     }
 
+    public function persons_affiliated_orgs($person_id = NULL)
+    {
+        $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);
+        if ( ! $pid) { $this->_error('Invalid person ID.'); return; }
+        try {
+            $this->_ok($this->Person_model->get_affiliated_organizations($pid));
+        } catch (Exception $e) {
+            log_message('error', 'Api::persons_affiliated_orgs pid=' . $pid . ' – ' . $e->getMessage());
+            $this->_ok(array());
+        }
+    }
+
     public function persons_trainings($person_id = NULL)
     {
         $pid = $person_id ? (int) $person_id : $this->_get_person_id(3);

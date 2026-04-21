@@ -726,15 +726,37 @@ class Person_model extends CI_Model
     }
 
     /**
-     * Trainings tab (subset of affiliations/trainings).
+     * Trainings tab — joined with banned_organizations to resolve org name.
+     * admin.js keys: organization_name, training_camp, training_site, training_year,
+     *                training_duration, training_purpose, material_taught, other_details
      */
     public function get_trainings($person_id)
     {
         $rows = $this->db
-            ->select("pt.*")
+            ->select("pt.*, COALESCE(bo.org_name, '') AS organization_name", FALSE)
+            ->join(self::T_ORGANIZATIONS . ' bo', 'bo.org_id = pt.organization_id', 'left')
             ->where('pt.person_id', (int) $person_id)
             ->order_by('pt.id', 'ASC')
             ->get(self::T_PERSON_TRAININGS . ' pt')
+            ->result_array();
+
+        return $rows ?: array();
+    }
+
+    /**
+     * Returns the distinct organizations a person is already affiliated with.
+     * Used to populate the training form's organization dropdown.
+     * Mirrors dramslive Model_Personprofile::get_person_affiliated_org().
+     */
+    public function get_affiliated_organizations($person_id)
+    {
+        $rows = $this->db
+            ->select("pa.organization_id, COALESCE(bo.org_name, '') AS org_name", FALSE)
+            ->join(self::T_ORGANIZATIONS . ' bo', 'bo.org_id = pa.organization_id', 'left')
+            ->where('pa.person_id', (int) $person_id)
+            ->group_by('pa.organization_id')
+            ->order_by('bo.org_name', 'ASC')
+            ->get(self::T_PERSON_AFFILIATIONS . ' pa')
             ->result_array();
 
         return $rows ?: array();
@@ -1098,6 +1120,14 @@ class Person_model extends CI_Model
             unset($row['id']);
             $this->db->insert(self::T_PERSON_TRAININGS, $row);
         }
+
+        // Mirror dramslive: mark the affiliated org as trained
+        if ( ! empty($data['organization_id'])) {
+            $this->db->where('person_id', $pid)
+                     ->where('organization_id', (int)$data['organization_id'])
+                     ->update(self::T_PERSON_AFFILIATIONS, array('is_trained' => 1));
+        }
+
         return $this->db->affected_rows() >= 0;
     }
 

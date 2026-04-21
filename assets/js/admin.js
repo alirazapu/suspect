@@ -753,6 +753,11 @@
                     ], { tab: target, actions: {edit: true, del: true} });
 
                     var trainHtml = dataTable(trainData, [
+                        {key: 'organization_name', label: 'Organization',
+                            render: function (r) {
+                                var n = r.organization_name || '';
+                                return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
+                            }},
                         {key: 'training_camp',     label: 'Camp'},
                         {key: 'training_site',     label: 'Site'},
                         {key: 'training_year',     label: 'Year'},
@@ -947,6 +952,35 @@
                         + ' style="min-height:32px">'
                         + escHtml(currentName || 'Enter ID and click Search')
                         + '</div>';
+                } else if (f.type === 'affiliated-org-select') {
+                    // Org select populated from person's existing affiliations only
+                    // (matches dramslive ajaxgettrainingorg behaviour)
+                    var affOrgSelectId = 'affiliatedOrgSel_' + f.name;
+                    formHtml += '<select class="form-control form-control-sm" name="' + escHtml(f.name) + '"'
+                        + ' id="' + affOrgSelectId + '">'
+                        + '<option value="">— Loading affiliated orgs… —</option></select>';
+                    // Deferred population after form is in DOM
+                    (function (selId, currentVal) {
+                        setTimeout(function () {
+                            $.getJSON(BASE + 'api/persons/' + PID + '/affiliated_orgs', function (resp) {
+                                var $sel = $('#' + selId);
+                                $sel.empty();
+                                if (resp && resp.status === 'ok' && resp.data && resp.data.length) {
+                                    $sel.append('<option value="">— Select Organization —</option>');
+                                    $.each(resp.data, function (_, o) {
+                                        var sel = (String(currentVal) === String(o.organization_id)) ? ' selected' : '';
+                                        $sel.append('<option value="' + escHtml(o.organization_id) + '"' + sel + '>'
+                                            + escHtml(o.org_name || '#' + o.organization_id) + '</option>');
+                                    });
+                                    initSelect2($sel.closest('form')[0]);
+                                } else {
+                                    $sel.append('<option value="">— Please affiliate person first —</option>');
+                                }
+                            }).fail(function () {
+                                $('#' + selId).html('<option value="">— Failed to load orgs —</option>');
+                            });
+                        }, 50);
+                    }(affOrgSelectId, val));
                 } else if (f.type === 'criminal-ps-cascade') {
                     // Region → District → Police Station cascade for criminal form
                     var regionOpts = buildOptions(lk.regions || [], 'region_id', 'name', row.region_id);
@@ -1196,7 +1230,7 @@
                 label: 'Training',
                 saveAction: 'update_trainings',
                 fields: [
-                    {name: 'organization_id',   label: 'Organization ID', type: 'number'},
+                    {name: 'organization_id', label: 'Organization (Affiliated)', type: 'affiliated-org-select'},
                     {name: 'training_camp',     label: 'Camp'},
                     {name: 'training_site',     label: 'Site'},
                     {name: 'training_year',     label: 'Year', type: 'number'},
