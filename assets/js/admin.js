@@ -100,7 +100,7 @@
         var genders = {1: 'Male', 2: 'Female', 3: 'Other'};
         var display = $.extend({}, d);
         display.gender_label            = genders[d.gender] || (d.gender !== undefined && d.gender !== '' ? d.gender : '—');
-        display.is_sensitive_dept_label = d.is_sensitive_department == 1 ? 'Yes' : (d.is_sensitive_department == 0 ? 'No' : '—');
+        display.is_sensitive_dept_label = d.is_sensitive_department === 1 || d.is_sensitive_department === '1' ? 'Yes' : (d.is_sensitive_department === 0 || d.is_sensitive_department === '0' ? 'No' : '—');
         html += kvTable(display, {
             alias:                    'Alias',
             dob:                      'Date of Birth',
@@ -1292,7 +1292,7 @@
         var $form       = $(this);
         var saveAction  = $form.data('save-action');
         var reloadTabId = $form.data('reload-tab');
-        var hasFile     = $form.data('has-file') === '1' || $form.data('has-file') === 1;
+        var hasFile     = $form.data('has-file') === 1;
         var $fileInput  = $form.find('input[type="file"][name="document"]');
         var hasActualFile = hasFile && $fileInput.length && $fileInput[0].files && $fileInput[0].files.length > 0;
 
@@ -1312,11 +1312,8 @@
                 dataType: 'json',
                 success: function (resp) {
                     if (resp && resp.status === 'ok') {
-                        // Now upload the file
-                        var tabName = reloadTabId.replace('#tab-', '');
-                        // Map tab id to upload tab name
-                        var tabUploadMap = {'income': 'income', 'assets': 'assets', 'reports': 'reports'};
-                        var uploadTabName = tabUploadMap[tabName] || tabName;
+                        // Now upload the file — tab name is everything after '#tab-'
+                        var uploadTabName = reloadTabId.replace('#tab-', '');
                         var uploadFd = new FormData();
                         uploadFd.append('pid', $form.find('[name="pid"]').val());
                         uploadFd.append('tab', uploadTabName);

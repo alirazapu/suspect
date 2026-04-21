@@ -534,15 +534,18 @@ class Personprofile extends CI_Controller
 
         // Validate file type — allow common document/image types
         $allowedMimes = array(
-            'application/pdf', 'image/jpeg', 'image/png', 'image/gif',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/pdf'      => 'pdf',
+            'image/jpeg'           => 'jpg',
+            'image/png'            => 'png',
+            'image/gif'            => 'gif',
+            'application/msword'   => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
         );
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($_FILES['document']['tmp_name']);
-        if ( ! in_array($mimeType, $allowedMimes, TRUE)) {
+        if ( ! array_key_exists($mimeType, $allowedMimes)) {
             $this->_error('Invalid file type. Allowed: PDF, JPG, PNG, Word, Excel.');
             return;
         }
@@ -553,8 +556,9 @@ class Personprofile extends CI_Controller
             return;
         }
 
-        $ext      = pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION);
-        $filename = 'doc_' . time() . '_' . uniqid() . '.' . strtolower($ext);
+        // Derive extension from MIME type (never from user-supplied filename)
+        $ext      = $allowedMimes[$mimeType];
+        $filename = 'doc_' . time() . '_' . uniqid() . '.' . $ext;
         $destPath = $uploadDir . $filename;
 
         if ( ! move_uploaded_file($_FILES['document']['tmp_name'], $destPath)) {
