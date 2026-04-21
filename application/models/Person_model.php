@@ -294,7 +294,6 @@ class Person_model extends CI_Model
                       COALESCE(pi.cnic_number, pi.cnic_number_foreigner, '') AS cnic")
             ->join(self::T_PERSON_INITIATE . ' pi', 'pi.person_id = p.person_id', 'left')
             ->where('p.person_id', (int) $person_id)
-            ->where('p.is_deleted', 0)
             ->get(self::T_PERSONS . ' p')
             ->row_array();
         return $row ?: null;
