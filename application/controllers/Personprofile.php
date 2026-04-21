@@ -543,8 +543,18 @@ class Personprofile extends CI_Controller
             'application/vnd.ms-excel' => 'xls',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
         );
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->file($_FILES['document']['tmp_name']);
+
+        // Detect MIME type — use finfo if available, fall back to mime_content_type
+        if (function_exists('finfo_open')) {
+            $finfo    = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($_FILES['document']['tmp_name']);
+        } elseif (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($_FILES['document']['tmp_name']);
+        } else {
+            $this->_error('Server cannot detect file type. Please contact the administrator.');
+            return;
+        }
+
         if ( ! array_key_exists($mimeType, $allowedMimes)) {
             $this->_error('Invalid file type. Allowed: PDF, JPG, PNG, Word, Excel.');
             return;
