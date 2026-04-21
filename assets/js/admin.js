@@ -98,9 +98,15 @@
         }
         // Pre-process values for human-readable display
         var genders = {1: 'Male', 2: 'Female', 3: 'Other'};
+        var motherTongueLabels = {
+            1: 'Urdu', 2: 'Punjabi', 3: 'Sindhi', 4: 'Pashto', 5: 'Balochi',
+            6: 'Saraiki', 7: 'Hindko', 8: 'Brahui', 9: 'Kashmiri', 10: 'Shina',
+            11: 'Balti', 12: 'English', 13: 'Arabic', 14: 'Other'
+        };
         var display = $.extend({}, d);
         display.gender_label            = genders[d.gender] || (d.gender !== undefined && d.gender !== '' ? d.gender : '—');
         display.is_sensitive_dept_label = d.is_sensitive_department === 1 || d.is_sensitive_department === '1' ? 'Yes' : (d.is_sensitive_department === 0 || d.is_sensitive_department === '0' ? 'No' : '—');
+        display.mother_tongue_label     = motherTongueLabels[d.mother_tongue] || (d.mother_tongue && d.mother_tongue !== '0' ? d.mother_tongue : '');
         html += kvTable(display, {
             alias:                    'Alias',
             dob:                      'Date of Birth',
@@ -111,7 +117,7 @@
             caste_label:              'Caste',
             nationality_label:        'Nationality',
             place_of_birth:           'Place of Birth',
-            mother_tongue:            'Mother Tongue',
+            mother_tongue_label:       'Mother Tongue',
             language_read_write:      'Languages (R/W)',
             language_speak:           'Languages (Spoken)',
             language_accent:          'Language Accent',
@@ -243,13 +249,16 @@
         var casteOpts     = buildOptions(lk.castes,           'id', 'caste',          d.caste);
         var countryOpts   = buildOptions(lk.countries,        'id', 'nicename',       d.nationality);
 
-        // Mother Tongue — static list
-        var motherTongues = ['Urdu', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki',
-                             'Hindko', 'Brahui', 'Kashmiri', 'Shina', 'Balti', 'English', 'Arabic', 'Other'];
+        // Mother Tongue — static list (values are integer IDs stored in the DB)
+        var motherTongueMap = {
+            1: 'Urdu', 2: 'Punjabi', 3: 'Sindhi', 4: 'Pashto', 5: 'Balochi',
+            6: 'Saraiki', 7: 'Hindko', 8: 'Brahui', 9: 'Kashmiri', 10: 'Shina',
+            11: 'Balti', 12: 'English', 13: 'Arabic', 14: 'Other'
+        };
         var motherTongueOpts = '<option value="">— Select —</option>';
-        $.each(motherTongues, function (_, lang) {
-            var sel = (d.mother_tongue === lang) ? ' selected' : '';
-            motherTongueOpts += '<option value="' + escHtml(lang) + '"' + sel + '>' + escHtml(lang) + '</option>';
+        $.each(motherTongueMap, function (id, lang) {
+            var sel = (String(d.mother_tongue) === String(id)) ? ' selected' : '';
+            motherTongueOpts += '<option value="' + id + '"' + sel + '>' + escHtml(lang) + '</option>';
         });
 
         // Temporary address — region/district/police cascades
@@ -322,8 +331,11 @@
         $.each(rows, function (_, row) {
             html += '<tr>';
             $.each(cols, function (_, col) {
-                var val = (row[col.key] !== undefined && row[col.key] !== null && row[col.key] !== '')
-                    ? escHtml(col.render ? col.render(row) : row[col.key]) : '—';
+                var raw = row[col.key];
+                var empty = (raw === undefined || raw === null || raw === '');
+                var val = empty
+                    ? '<em class="text-muted">—</em>'
+                    : (col.render ? col.render(row) : escHtml(raw));
                 html += '<td>' + val + '</td>';
             });
             if (opts.actions) {
@@ -584,9 +596,12 @@
                         {key: 'monthly_amount', label: 'Amount (PKR)'},
                         {key: 'duration_label', label: 'Duration'},
                         {key: 'file_link',      label: 'Document', render: function (r) {
-                            return r.file_link
-                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-file mr-1"></i>View</a>'
-                                : '<em class="text-muted">—</em>';
+                            if ( ! r.file_link) return '<em class="text-muted">—</em>';
+                            var url  = escHtml(BASE + r.file_link);
+                            var name = escHtml(r.file_link.split('/').pop());
+                            return '<button type="button" class="btn btn-xs btn-outline-info btn-doc-preview"'
+                                + ' data-url="' + url + '" data-filename="' + name + '">'
+                                + '<i class="fas fa-eye mr-1"></i>View</button>';
                         }}
                     ], {
                         tab: target,
@@ -629,9 +644,12 @@
                         {key: 'since_year',     label: 'Since'},
                         {key: 'asset_acquired_how', label: 'Acquired How'},
                         {key: 'file_link', label: 'Document', render: function (r) {
-                            return r.file_link
-                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-file mr-1"></i>View</a>'
-                                : '<em class="text-muted">—</em>';
+                            if ( ! r.file_link) return '<em class="text-muted">—</em>';
+                            var url  = escHtml(BASE + r.file_link);
+                            var name = escHtml(r.file_link.split('/').pop());
+                            return '<button type="button" class="btn btn-xs btn-outline-info btn-doc-preview"'
+                                + ' data-url="' + url + '" data-filename="' + name + '">'
+                                + '<i class="fas fa-eye mr-1"></i>View</button>';
                         }}
                     ], {
                         tab: target,
@@ -745,8 +763,16 @@
                                 var n = r.organization_name || '';
                                 return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
                             }},
-                        {key: 'ideological_stance',label: 'Ideological Stance'},
-                        {key: 'designation',       label: 'Designation'},
+                        {key: 'ideological_stance', label: 'Ideological Stance',
+                            render: function (r) {
+                                return (r.ideological_stance && r.ideological_stance !== '0')
+                                    ? escHtml(r.ideological_stance) : '<em class="text-muted">—</em>';
+                            }},
+                        {key: 'designation', label: 'Designation',
+                            render: function (r) {
+                                return (r.designation && r.designation !== '0')
+                                    ? escHtml(r.designation) : '<em class="text-muted">—</em>';
+                            }},
                         {key: 'is_trained',        label: 'Trained',
                             render: function (r) { return r.is_trained ? 'Yes' : 'No'; }},
                         {key: 'remarks',           label: 'Details'}
@@ -758,7 +784,11 @@
                                 var n = r.organization_name || '';
                                 return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
                             }},
-                        {key: 'training_camp',     label: 'Camp'},
+                        {key: 'training_camp', label: 'Camp',
+                            render: function (r) {
+                                return (r.training_camp && r.training_camp !== '0')
+                                    ? escHtml(r.training_camp) : '<em class="text-muted">—</em>';
+                            }},
                         {key: 'training_site',     label: 'Site'},
                         {key: 'training_year',     label: 'Year'},
                         {key: 'training_duration', label: 'Duration'},
@@ -807,9 +837,12 @@
                         {key: 'report_date',       label: 'Date'},
                         {key: 'summary',           label: 'Details'},
                         {key: 'file_link', label: 'Attachment', render: function (r) {
-                            return r.file_link
-                                ? '<a href="' + escHtml(BASE + r.file_link) + '" target="_blank"><i class="fas fa-paperclip mr-1"></i>View</a>'
-                                : '<em class="text-muted">—</em>';
+                            if ( ! r.file_link) return '<em class="text-muted">—</em>';
+                            var url  = escHtml(BASE + r.file_link);
+                            var name = escHtml(r.file_link.split('/').pop());
+                            return '<button type="button" class="btn btn-xs btn-outline-info btn-doc-preview"'
+                                + ' data-url="' + url + '" data-filename="' + name + '">'
+                                + '<i class="fas fa-eye mr-1"></i>View</button>';
                         }}
                     ], {
                         tab: target,
@@ -930,9 +963,12 @@
                 } else if (f.type === 'file') {
                     // Show existing file link if any
                     if (row.file_link) {
+                        var existUrl  = escHtml(BASE + row.file_link);
+                        var existName = escHtml(row.file_link.split('/').pop());
                         formHtml += '<div class="mb-1 small text-muted">'
-                            + 'Current: <a href="' + escHtml(BASE + row.file_link) + '" target="_blank">'
-                            + '<i class="fas fa-file mr-1"></i>View Document</a></div>';
+                            + 'Current: <button type="button" class="btn btn-xs btn-outline-info btn-doc-preview"'
+                            + ' data-url="' + existUrl + '" data-filename="' + existName + '">'
+                            + '<i class="fas fa-eye mr-1"></i>View Document</button></div>';
                     }
                     formHtml += '<input type="file" class="form-control-file form-control-sm" name="document">';
                 } else if (f.type === 'readonly') {
@@ -1069,17 +1105,17 @@
                     {name: 'edu_type', label: 'Education Type', type: 'select', options: [
                         {value: 0, label: 'Religious'}, {value: 1, label: 'Non-Religious'}
                     ]},
-                    {name: 'degree_name',    label: 'Degree/Certificate'},
-                    {name: 'institute_name', label: 'Institution'},
-                    {name: 'complete_year',  label: 'Passing Year', type: 'number'},
-                    {name: 'education_level', label: 'Education Level', type: 'select',
+                    {name: 'education_level', dataKey: 'education_level_id', label: 'Education Level', type: 'select',
                         lookupKey: 'education_levels', lookupId: 'id', lookupLabel: 'education_level',
                         options: [
                             {value: 1, label: 'Primary'}, {value: 2, label: 'Middle'},
                             {value: 3, label: 'Matric'}, {value: 4, label: 'Intermediate'},
                             {value: 5, label: 'Bachelor'}, {value: 6, label: 'Master'},
                             {value: 7, label: 'M.Phil'}, {value: 8, label: 'PhD'}
-                        ]}
+                        ]},
+                    {name: 'degree_name',    dataKey: 'degree',       label: 'Degree/Certificate'},
+                    {name: 'institute_name', dataKey: 'institution',  label: 'Institution'},
+                    {name: 'complete_year',  dataKey: 'passing_year', label: 'Passing Year', type: 'number'}
                 ]
             },
             '#tab-income': {
@@ -1087,9 +1123,9 @@
                 saveAction: 'update_personincomesource',
                 hasFileUpload: true,
                 fields: [
-                    {name: 'income_source_name', label: 'Source Name'},
-                    {name: 'details',            label: 'Description', type: 'textarea'},
-                    {name: 'income_amount',      label: 'Amount (PKR)', type: 'number'},
+                    {name: 'income_source_name', dataKey: 'source_type',    label: 'Source Name'},
+                    {name: 'details',            dataKey: 'description',    label: 'Description', type: 'textarea'},
+                    {name: 'income_amount',      dataKey: 'monthly_amount', label: 'Amount (PKR)', type: 'number'},
                     {name: 'income_source_duration', label: 'Duration', type: 'select', options: [
                         {value: 1, label: 'Daily'}, {value: 2, label: 'Monthly'}, {value: 3, label: 'Yearly'}
                     ]},
@@ -1116,12 +1152,12 @@
                 saveAction: 'update_personassets',
                 hasFileUpload: true,
                 fields: [
-                    {name: 'asset_name',          label: 'Asset Name'},
-                    {name: 'details',             label: 'Description', type: 'textarea'},
+                    {name: 'asset_name',          dataKey: 'asset_type',   label: 'Asset Name'},
+                    {name: 'details',             dataKey: 'description',  label: 'Description', type: 'textarea'},
                     {name: 'moveable_immovable',  label: 'Type', type: 'select', options: [
                         {value: 0, label: 'Unknown'}, {value: 1, label: 'Moveable'}, {value: 2, label: 'Immovable'}
                     ]},
-                    {name: 'asset_value',         label: 'Value (PKR)', type: 'number'},
+                    {name: 'asset_value',         dataKey: 'value',        label: 'Value (PKR)', type: 'number'},
                     {name: 'since_year',          label: 'Since (Year)', type: 'number'},
                     {name: 'asset_acquired_how',  label: 'Acquired How'},
                     {name: 'document',            label: 'Supporting Document', type: 'file'}
@@ -1131,7 +1167,7 @@
                 label: 'Mobile Number',
                 saveAction: 'update_mobiles',
                 fields: [
-                    {name: 'phone_number',    label: 'Phone Number'},
+                    {name: 'phone_number',    dataKey: 'mobile_number', label: 'Phone Number'},
                     {name: 'sim_owner',       label: 'SIM Owner'},
                     {name: 'contact_type',    label: 'Contact Type', type: 'select', options: [
                         {value: 1, label: 'Personal'}, {value: 2, label: 'WhatsApp'},
@@ -1151,8 +1187,8 @@
                 label: 'Relation',
                 saveAction: 'update_relations',
                 fields: [
-                    {name: 'relation_with', label: 'Related Person (ID + Search)', type: 'person-lookup'},
-                    {name: 'person_relation_type', label: 'Relation Type', type: 'select',
+                    {name: 'relation_with', dataKey: 'rel_to_id', label: 'Related Person (ID + Search)', type: 'person-lookup'},
+                    {name: 'person_relation_type', dataKey: 'relation_type_id', label: 'Relation Type', type: 'select',
                         lookupKey: 'relation_types', lookupId: 'id', lookupLabel: 'relation_name',
                         options: [
                             {value: 1, label: 'Father'}, {value: 2, label: 'Mother'},
@@ -1175,9 +1211,9 @@
                 saveAction: 'update_criminalr',
                 fields: [
                     {name: 'fir_number',        label: 'FIR Number'},
-                    {name: 'fir_date',          label: 'FIR Date', type: 'date'},
+                    {name: 'fir_date',          dataKey: 'case_date',   label: 'FIR Date', type: 'date'},
                     {name: 'police_station_id', label: 'Police Station', type: 'criminal-ps-cascade'},
-                    {name: 'sections_applied',  label: 'Sections Applied'},
+                    {name: 'sections_applied',  dataKey: 'section',     label: 'Sections Applied'},
                     {name: 'case_position', label: 'Case Status', type: 'select', options: [
                         {value: 1, label: 'Under Investigation'}, {value: 2, label: 'Under Trial'},
                         {value: 3, label: 'Convicted'}, {value: 4, label: 'Discharged'}
@@ -1222,7 +1258,7 @@
                     {name: 'is_trained',               label: 'Is Trained', type: 'select', options: [
                         {value: 0, label: 'No'}, {value: 1, label: 'Yes'}
                     ]},
-                    {name: 'details',                  label: 'Details', type: 'textarea'},
+                    {name: 'details',                  dataKey: 'remarks', label: 'Details', type: 'textarea'},
                     {name: 'self_recruitment_details', label: 'Self-Recruitment Details (Did You Recruit? How?)', type: 'textarea'}
                 ]
             },
@@ -1257,7 +1293,7 @@
                     ]},
                     {name: 'report_reference_no', label: 'Reference No.'},
                     {name: 'report_date',         label: 'Date', type: 'date'},
-                    {name: 'report_details',      label: 'Details', type: 'textarea'},
+                    {name: 'report_details',      dataKey: 'summary', label: 'Details', type: 'textarea'},
                     {name: 'document',            label: 'Attachment', type: 'file'}
                 ]
             }
@@ -1595,6 +1631,45 @@
         $('#advancedFilters').slideToggle(200);
         var $icon = $(this).find('i');
         $icon.toggleClass('fa-chevron-down fa-chevron-up');
+    });
+
+    // ================================================================
+    // Document Gallery Modal — triggered by .btn-doc-preview buttons
+    // ================================================================
+    function showDocGallery(url, filename) {
+        var $body = $('#docGalleryBody');
+        var $dl   = $('#docGalleryDownload');
+        var $name = $('#docGalleryFileName');
+        $body.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Loading…</span></div>');
+        $dl.attr('href', url).attr('download', filename || '');
+        $name.text(filename || '');
+        var ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+        var isImage = /^(jpg|jpeg|png|gif|bmp|webp|svg)$/.test(ext);
+        var isPdf   = ext === 'pdf';
+        if (isImage) {
+            var $img = $('<img>').attr('src', url)
+                .addClass('img-fluid rounded')
+                .css({'max-height': '70vh', 'max-width': '100%'})
+                .on('load', function () { $body.html('').append($img); })
+                .on('error', function () {
+                    $body.html('<p class="text-danger"><i class="fas fa-exclamation-circle mr-1"></i>Image could not be loaded.</p>'
+                        + '<a href="' + escHtml(url) + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt mr-1"></i>Open in new tab</a>');
+                });
+        } else if (isPdf) {
+            $body.html('<embed src="' + escHtml(url) + '" type="application/pdf" style="width:100%;height:70vh;">'
+                + '<p class="text-muted small mt-2">If the PDF does not display, use the Download button below.</p>');
+        } else {
+            $body.html('<div class="py-4"><i class="fas fa-file fa-4x text-secondary mb-3"></i>'
+                + '<p class="text-muted">Preview not available for this file type.</p>'
+                + '<a href="' + escHtml(url) + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt mr-1"></i>Open file</a></div>');
+        }
+        $('#docGalleryModal').modal('show');
+    }
+
+    $(document).on('click', '.btn-doc-preview', function () {
+        var url      = $(this).data('url');
+        var filename = $(this).data('filename');
+        showDocGallery(url, filename);
     });
 
     // ----------------------------------------------------------------

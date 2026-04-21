@@ -219,4 +219,25 @@ window.SUSPECT_BASE_URL = '<?php echo base_url(); ?>';
     </div><!-- /.card-body -->
 </div><!-- /.card -->
 
+<!-- Document Gallery Modal -->
+<div class="modal fade" id="docGalleryModal" tabindex="-1" role="dialog" aria-labelledby="docGalleryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="docGalleryModalLabel"><i class="fas fa-file mr-1"></i>Document Viewer</h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body text-center p-2" id="docGalleryBody">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div class="modal-footer py-2 justify-content-between">
+                <small class="text-muted" id="docGalleryFileName"></small>
+                <a id="docGalleryDownload" href="#" download class="btn btn-sm btn-success">
+                    <i class="fas fa-download mr-1"></i>Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap modal used by admin.js for edit forms (appended dynamically by JS) -->

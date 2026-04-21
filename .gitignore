@@ -1,5 +1,8 @@
 .DS_Store
 
+# User-uploaded files — not tracked in source control
+uploads/
+
 application/cache/*
 !application/cache/index.html
 !application/cache/.htaccess
