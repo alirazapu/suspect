@@ -615,31 +615,41 @@ class Person_model extends CI_Model
     }
 
     /**
-     * Relations tab.
-     * admin.js keys: relation_type, name, father_name, cnic, contact, remarks
-     * Joins: person + person_initiate + lu_relation_type
+     * Relations tab — bidirectional, matches dramslive behaviour.
+     * Returns rows where this person is either the initiator OR the related-person.
+     * admin.js keys: rel_from_id, rel_from_name, relation_type, rel_to_id, rel_to_name, cnic, under_custodian
      */
     public function get_relations($person_id)
     {
-        $rows = $this->db
-            ->select("pr.person_id, pr.relation_with, pr.under_custodian,
-                      pr.person_relation_type AS relation_type_id,
-                      COALESCE(lrt.relation_name, '') AS relation_type,
-                      CONCAT(COALESCE(rp.first_name,''),' ',COALESCE(rp.last_name,'')) AS name,
-                      rp.father_name,
-                      COALESCE(rpi.cnic_number, rpi.cnic_number_foreigner, '') AS cnic,
-                      COALESCE(rco.nicename, '') AS country,
-                      NULL AS contact,
-                      NULL AS remarks", FALSE)
-            ->join(self::T_LU_RELATION     . ' lrt', 'lrt.id = pr.person_relation_type',  'left')
-            ->join(self::T_PERSONS         . ' rp',  'rp.person_id = pr.relation_with',   'left')
-            ->join(self::T_PERSON_INITIATE . ' rpi', 'rpi.person_id = pr.relation_with',  'left')
-            ->join(self::T_PERSON_DETAIL   . ' rpd', 'rpd.person_id = pr.relation_with',  'left')
-            ->join(self::T_LU_COUNTRY      . ' rco', 'rco.id = rpd.nationality',           'left')
-            ->where('pr.person_id', (int) $person_id)
-            ->get(self::T_PERSON_RELATIONS . ' pr')
-            ->result_array();
+        $pid = (int) $person_id;
 
+        // Use a raw UNION so we get both directions without cross-joining twice.
+        // Left half: this person initiated the relation → "relation from" is THIS person, "relation with" is the other
+        // Right half: another person added THIS person → "relation from" is the other person, "relation with" is THIS person
+        $sql = "
+            SELECT
+                pr.person_id            AS rel_from_id,
+                TRIM(CONCAT(COALESCE(fp.first_name,''),' ',COALESCE(fp.middle_name,''),' ',COALESCE(fp.last_name,'')))  AS rel_from_name,
+                COALESCE(fpi.cnic_number, fpi.cnic_number_foreigner, '') AS rel_from_cnic,
+                pr.person_relation_type AS relation_type_id,
+                COALESCE(lrt.relation_name, '')                          AS relation_type,
+                pr.relation_with        AS rel_to_id,
+                TRIM(CONCAT(COALESCE(tp.first_name,''),' ',COALESCE(tp.middle_name,''),' ',COALESCE(tp.last_name,'')))  AS rel_to_name,
+                COALESCE(tpi.cnic_number, tpi.cnic_number_foreigner, '') AS cnic,
+                COALESCE(tco.nicename, '') AS country,
+                pr.under_custodian
+            FROM " . self::T_PERSON_RELATIONS . " pr
+            LEFT JOIN " . self::T_LU_RELATION . "      lrt ON lrt.id   = pr.person_relation_type
+            LEFT JOIN " . self::T_PERSONS     . "      fp  ON fp.person_id  = pr.person_id
+            LEFT JOIN " . self::T_PERSON_INITIATE . "  fpi ON fpi.person_id = pr.person_id
+            LEFT JOIN " . self::T_PERSONS     . "      tp  ON tp.person_id  = pr.relation_with
+            LEFT JOIN " . self::T_PERSON_INITIATE . "  tpi ON tpi.person_id = pr.relation_with
+            LEFT JOIN " . self::T_PERSON_DETAIL   . "  tpd ON tpd.person_id = pr.relation_with
+            LEFT JOIN " . self::T_LU_COUNTRY      . "  tco ON tco.id        = tpd.nationality
+            WHERE pr.person_id = {$pid} OR pr.relation_with = {$pid}
+            ORDER BY pr.person_id ASC";
+
+        $rows = $this->db->query($sql)->result_array();
         return $rows ?: array();
     }
 
@@ -687,7 +697,6 @@ class Person_model extends CI_Model
     {
         $rows = $this->db
             ->select("pa.id, pa.person_id, pa.organization_id,
-                      COALESCE(pa.organization_name, '') AS organization_name,
                       pa.ideological_stance,
                       pa.designation, pa.details AS remarks,
                       pa.self_recruitment_details, pa.is_trained,
@@ -1037,7 +1046,7 @@ class Person_model extends CI_Model
     public function insert_update_affiliation($data, $person_id)
     {
         $pid     = (int) $person_id;
-        $allowed = array('id', 'organization_id', 'organization_name', 'ideological_stance', 'details',
+        $allowed = array('id', 'organization_id', 'ideological_stance', 'details',
                          'self_recruitment_details', 'is_trained', 'designation');
         $row     = array_intersect_key($data, array_flip($allowed));
         $row['person_id'] = $pid;

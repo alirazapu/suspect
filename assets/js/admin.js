@@ -669,10 +669,20 @@
             case '#tab-relations':
                 loadTab(target, BASE + 'api/persons/' + PID + '/relations', function (d) {
                     return dataTable(d, [
-                        {key: 'relation_type',   label: 'Relation Type'},
-                        {key: 'name',            label: 'Relation With'},
-                        {key: 'cnic',            label: 'CNIC'},
-                        {key: 'country',         label: 'Country'},
+                        {key: 'rel_from_name', label: 'Relation From',
+                            render: function (r) {
+                                var n = (r.rel_from_name || '').trim() || '#' + r.rel_from_id;
+                                var c = r.rel_from_cnic ? ' <small class="text-muted">(' + escHtml(r.rel_from_cnic) + ')</small>' : '';
+                                return escHtml(n) + c;
+                            }},
+                        {key: 'relation_type',  label: 'Relation Type'},
+                        {key: 'rel_to_name',    label: 'Relation With',
+                            render: function (r) {
+                                var n = (r.rel_to_name || '').trim() || '#' + r.rel_to_id;
+                                return escHtml(n);
+                            }},
+                        {key: 'cnic',           label: 'CNIC'},
+                        {key: 'country',        label: 'Country'},
                         {key: 'under_custodian', label: 'Under Custody',
                             render: function (r) { return r.under_custodian ? 'Yes' : 'No'; }}
                     ], {
@@ -730,13 +740,7 @@
                         + '<i class="fas fa-plus mr-1"></i>Add Training</button></div>';
 
                     var affHtml = dataTable(affData, [
-                        {key: 'organization_name', label: 'Organization',
-                            render: function (r) {
-                                var n = r.organization_name || '';
-                                var id = r.organization_id || '';
-                                if (n) return escHtml(n) + (id ? ' <small class="text-muted">(#' + escHtml(id) + ')</small>' : '');
-                                return id ? '#' + escHtml(id) : '<em class="text-muted">—</em>';
-                            }},
+                        {key: 'organization_id',   label: 'Organization ID'},
                         {key: 'ideological_stance',label: 'Ideological Stance'},
                         {key: 'designation',       label: 'Designation'},
                         {key: 'is_trained',        label: 'Trained',
@@ -1151,8 +1155,7 @@
                 label: 'Affiliation',
                 saveAction: 'update_affiliations',
                 fields: [
-                    {name: 'organization_name',        label: 'Organization Name'},
-                    {name: 'organization_id',          label: 'Organization ID (if known)', type: 'number'},
+                    {name: 'organization_id',          label: 'Organization ID', type: 'number'},
                     {name: 'ideological_stance',       label: 'Ideological Stance', type: 'select', options: [
                         {value: 'Jihadi',       label: 'Jihadi'},
                         {value: 'Sectarian',    label: 'Sectarian'},
