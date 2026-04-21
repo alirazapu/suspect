@@ -16,6 +16,9 @@
 
     <!-- Suspect admin theme (includes Bootstrap 4 + FontAwesome 5 via CDN @import fallback) -->
     <link rel="stylesheet" href="<?php echo base_url('assets/css/admin.css'); ?>">
+    <!-- Select2 — searchable dropdowns -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css">
     <?php if (isset($extra_css)) echo $extra_css; ?>
 </head>
 <body class="admin-body">

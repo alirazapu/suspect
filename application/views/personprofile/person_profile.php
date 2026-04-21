@@ -133,7 +133,7 @@ window.SUSPECT_BASE_URL = '<?php echo base_url(); ?>';
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="tab-reports-link" data-toggle="tab"
-                   href="#tab-reports" role="tab"><i class="fas fa-file-alt mr-1"></i>Reports</a>
+                   href="#tab-reports" role="tab"><i class="fas fa-file-alt mr-1"></i>Person Reports</a>
             </li>
         </ul>
 

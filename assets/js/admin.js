@@ -96,24 +96,29 @@
             html += '<p class="text-muted p-3">No details recorded yet. Click <strong>Add Details</strong> to enter information.</p>';
             return html;
         }
-        html += kvTable(d, {
-            alias:           'Alias',
-            dob:             'Date of Birth',
-            gender:          'Gender',
-            marital_status:  'Marital Status',
-            religion_label:  'Religion',
-            sect_label:      'Sect',
-            caste_label:     'Caste',
-            nationality_label: 'Nationality',
-            place_of_birth:  'Place of Birth',
-            mother_tongue:   'Mother Tongue',
-            language_read_write: 'Languages (R/W)',
-            language_speak:  'Languages (Spoken)',
-            language_accent: 'Language Accent',
-            physical_appearance: 'Physical Appearance',
-            other_details:   'Other Details',
-            temporary_address: 'Temp Address',
-            is_sensitive_department: 'Sensitive Dept.'
+        // Pre-process values for human-readable display
+        var genders = {1: 'Male', 2: 'Female', 3: 'Other'};
+        var display = $.extend({}, d);
+        display.gender_label            = genders[d.gender] || (d.gender !== undefined && d.gender !== '' ? d.gender : '—');
+        display.is_sensitive_dept_label = d.is_sensitive_department == 1 ? 'Yes' : (d.is_sensitive_department == 0 ? 'No' : '—');
+        html += kvTable(display, {
+            alias:                    'Alias',
+            dob:                      'Date of Birth',
+            gender_label:             'Gender',
+            marital_status:           'Marital Status',
+            religion_label:           'Religion',
+            sect_label:               'Sect',
+            caste_label:              'Caste',
+            nationality_label:        'Nationality',
+            place_of_birth:           'Place of Birth',
+            mother_tongue:            'Mother Tongue',
+            language_read_write:      'Languages (R/W)',
+            language_speak:           'Languages (Spoken)',
+            language_accent:          'Language Accent',
+            physical_appearance:      'Physical Appearance',
+            other_details:            'Other Details',
+            temporary_address:        'Temporary Address',
+            is_sensitive_dept_label:  'Belongs to Sensitive Dept.'
         });
         return html;
     }
@@ -231,13 +236,34 @@
         var religionOpts  = buildOptions(lk.religions,        'id', 'religion',      d.religion);
         var sectOpts      = '<option value="">— Select Religion First —</option>';
         if (d.sect) {
-            // Pre-populate current sect so it shows before cascade loads
             sectOpts = '<option value="' + escHtml(d.sect) + '" selected>'
                 + escHtml(d.sect_label || 'Sect #' + d.sect) + '</option>';
         }
         var maritalOpts   = buildOptions(lk.marital_statuses, 'id', 'marital_status', d.marital_status_id || d.marital_status);
         var casteOpts     = buildOptions(lk.castes,           'id', 'caste',          d.caste);
         var countryOpts   = buildOptions(lk.countries,        'id', 'nicename',       d.nationality);
+
+        // Mother Tongue — static list
+        var motherTongues = ['Urdu', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki',
+                             'Hindko', 'Brahui', 'Kashmiri', 'Shina', 'Balti', 'English', 'Arabic', 'Other'];
+        var motherTongueOpts = '<option value="">— Select —</option>';
+        $.each(motherTongues, function (_, lang) {
+            var sel = (d.mother_tongue === lang) ? ' selected' : '';
+            motherTongueOpts += '<option value="' + escHtml(lang) + '"' + sel + '>' + escHtml(lang) + '</option>';
+        });
+
+        // Temporary address — region/district/police cascades
+        var tempRegionOpts = buildOptions(lk.regions, 'region_id', 'name', d.region_id);
+        var tempDistrictOpts = '<option value="">— Select Region First —</option>';
+        if (d.district_id) {
+            tempDistrictOpts = '<option value="' + escHtml(d.district_id) + '" selected>'
+                + escHtml(d.district || 'District #' + d.district_id) + '</option>';
+        }
+        var tempPsOpts = '<option value="">— Select District First —</option>';
+        if (d.police_station_id) {
+            tempPsOpts = '<option value="' + escHtml(d.police_station_id) + '" selected>'
+                + 'Police Station #' + escHtml(d.police_station_id) + '</option>';
+        }
 
         var html = '<form id="detailInfoForm" class="mt-3">';
         html += '<input type="hidden" name="pid" value="' + escHtml(PID) + '">';
@@ -252,16 +278,27 @@
         html += fRow('Caste',          fSelect('caste', casteOpts));
         html += fRow('Nationality',    fSelect('nationality', countryOpts));
         html += fRow('Place of Birth', fInput('place_of_birth', d.place_of_birth));
+        html += fRow('Mother Tongue',  '<select class="form-control form-control-sm" name="mother_tongue">' + motherTongueOpts + '</select>');
         html += '</div>';
         html += '<div class="col-md-6">';
-        html += fRow('Mother Tongue',  fInput('mother_tongue',    d.mother_tongue));
-        html += fRow('Languages (R/W)',fInput('language_read_write', d.language_read_write));
+        html += fRow('Languages (R/W)',    fInput('language_read_write', d.language_read_write));
         html += fRow('Languages (Spoken)', fInput('language_speak', d.language_speak));
-        html += fRow('Language Accent',fInput('language_accent',  d.language_accent));
+        html += fRow('Language Accent',    fInput('language_accent', d.language_accent));
         html += fRow('Physical Appearance', fTextarea('physical_appearance', d.physical_appearance, 2));
-        html += fRow('Other Details',  fTextarea('other_details', d.other_details, 2));
-        html += fRow('Temp Address',   fTextarea('temporary_address', d.temporary_address, 2));
-        html += fRow('Sensitive Dept', fSelect('is_sensitive_department', sensOpts));
+        html += fRow('Other Details',       fTextarea('other_details', d.other_details, 2));
+        html += fRow('Belongs to Sensitive Dept.', fSelect('is_sensitive_department', sensOpts));
+        html += '</div>';
+        html += '</div>';
+        // Temporary address section
+        html += '<hr><h6 class="text-secondary mt-2 mb-2"><i class="fas fa-map-marker-alt mr-1"></i>Temporary Address</h6>';
+        html += '<div class="row">';
+        html += '<div class="col-md-6">';
+        html += fRow('Address Text', fTextarea('temporary_address', d.temporary_address, 2));
+        html += fRow('Region', '<select class="form-control form-control-sm" name="region_id" id="detailTempRegionSel">' + tempRegionOpts + '</select>');
+        html += '</div>';
+        html += '<div class="col-md-6">';
+        html += fRow('District', '<select class="form-control form-control-sm" name="district_id" id="detailTempDistrictSel">' + tempDistrictOpts + '</select>');
+        html += fRow('Police Station', '<select class="form-control form-control-sm" name="police_station_id" id="detailTempPsSel">' + tempPsOpts + '</select>');
         html += '</div>';
         html += '</div>';
         html += '<div class="mt-3">'
@@ -277,10 +314,10 @@
     // ----------------------------------------------------------------
     function dataTable(rows, cols, opts) {
         opts = opts || {};
-        if ( ! rows || ! rows.length) return '<p class="text-muted py-3">No records found.</p>';
+        if ( ! rows || ! rows.length) return '<p class="text-muted py-4 text-center"><i class="fas fa-inbox mr-1"></i>No records found.</p>';
         var html = '<div class="table-responsive"><table class="table table-sm table-striped table-bordered"><thead><tr>';
         $.each(cols, function (_, col) { html += '<th>' + escHtml(col.label) + '</th>'; });
-        if (opts.actions) { html += '<th style="width:90px">Actions</th>'; }
+        if (opts.actions) { html += '<th class="text-center" style="width:75px">Actions</th>'; }
         html += '</tr></thead><tbody>';
         $.each(rows, function (_, row) {
             html += '<tr>';
@@ -291,15 +328,15 @@
             });
             if (opts.actions) {
                 var rowJson = escHtml(JSON.stringify(row));
-                html += '<td>';
+                html += '<td class="text-center" style="white-space:nowrap">';
                 if (opts.actions.edit) {
-                    html += '<button class="btn btn-xs btn-outline-primary mr-1 btn-edit-row" '
-                        + 'data-row="' + rowJson + '" data-tab="' + opts.tab + '">'
+                    html += '<button class="btn btn-xs btn-outline-primary btn-edit-row" '
+                        + 'data-row="' + rowJson + '" data-tab="' + opts.tab + '" title="Edit">'
                         + '<i class="fas fa-edit"></i></button>';
                 }
                 if (opts.actions.del) {
-                    html += '<button class="btn btn-xs btn-outline-danger btn-del-row" '
-                        + 'data-id="' + escHtml(row.id) + '" data-tab="' + opts.tab + '">'
+                    html += ' <button class="btn btn-xs btn-outline-danger btn-del-row" '
+                        + 'data-id="' + escHtml(row.id) + '" data-tab="' + opts.tab + '" title="Delete">'
                         + '<i class="fas fa-trash"></i></button>';
                 }
                 html += '</td>';
@@ -346,9 +383,11 @@
                     var formWrap = _makeFormWrap(tabId, 'info');
                     var addBtn = '';
                     if (opts && opts.addBtn) {
-                        addBtn = '<div class="mb-2">' + opts.addBtn + '</div>';
+                        addBtn = '<div class="mb-2 d-flex justify-content-end tab-add-btn-wrap" data-tab="' + tabId + '">'
+                            + opts.addBtn + '</div>';
                     }
                     $pane.html(formWrap + addBtn + render(resp.data));
+                    initSelect2($pane[0]);
                 } else {
                     var msg = (resp && resp.message) ? resp.message : 'No data available.';
                     $pane.html('<p class="text-muted p-3">' + escHtml(msg) + '</p>');
@@ -414,6 +453,25 @@
             + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
         $('body').append($toast);
         setTimeout(function () { $toast.alert('close'); }, 4000);
+    }
+
+    // ----------------------------------------------------------------
+    // Initialise Select2 on every <select> inside a context element
+    // ----------------------------------------------------------------
+    function initSelect2(ctx) {
+        if (typeof $.fn.select2 !== 'function') { return; }
+        $(ctx || document).find('select').not('.no-select2').each(function () {
+            // Destroy existing Select2 instance first to avoid duplicate binding
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2('destroy');
+            }
+            $(this).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: '— Select —'
+            });
+        });
     }
 
     // ----------------------------------------------------------------
@@ -485,8 +543,8 @@
             case '#tab-identities':
                 loadTab(target, BASE + 'api/persons/' + PID + '/identities', function (d) {
                     return dataTable(d, [
-                        {key: 'identity_type',   label: 'Type'},
-                        {key: 'identity_number', label: 'Number'}
+                        {key: 'identity_type', label: 'Identity Type'},
+                        {key: 'identity_no',   label: 'Number'}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -501,10 +559,12 @@
             case '#tab-education':
                 loadTab(target, BASE + 'api/persons/' + PID + '/education', function (d) {
                     return dataTable(d, [
-                        {key: 'degree',        label: 'Degree'},
+                        {key: 'edu_type',      label: 'Education Type',
+                            render: function (r) { return r.edu_type == 0 ? 'Religious' : 'Non-Religious'; }},
+                        {key: 'degree',        label: 'Degree/Certificate'},
                         {key: 'institution',   label: 'Institution'},
-                        {key: 'passing_year',  label: 'Year'},
-                        {key: 'education_level_label', label: 'Level'}
+                        {key: 'passing_year',  label: 'Passing Year'},
+                        {key: 'education_level_label', label: 'Education Level'}
                     ], {
                         tab: target,
                         actions: {edit: true, del: true}
@@ -577,13 +637,14 @@
             case '#tab-mobiles':
                 loadTab(target, BASE + 'api/persons/' + PID + '/mobiles', function (d) {
                     return dataTable(d, [
-                        {key: 'mobile_number', label: 'Number'},
-                        {key: 'operator',      label: 'Operator'},
-                        {key: 'sim_owner',     label: 'SIM Owner'},
-                        {key: 'status_label',  label: 'Status'},
-                        {key: 'connection_type_label', label: 'Connection'},
-                        {key: 'sim_activated_at',  label: 'Activated'},
-                        {key: 'sim_last_used_at',  label: 'Last Used'}
+                        {key: 'mobile_number',        label: 'Number'},
+                        {key: 'operator',             label: 'Operator'},
+                        {key: 'sim_owner',            label: 'SIM Owner'},
+                        {key: 'contact_type_label',   label: 'Contact Type'},
+                        {key: 'status_label',         label: 'Status'},
+                        {key: 'connection_type_label',label: 'Connection'},
+                        {key: 'sim_activated_at',     label: 'Activated At'},
+                        {key: 'sim_last_used_at',     label: 'Last Used At'}
                     ], {
                         tab: target,
                         actions: {edit: true}
@@ -598,10 +659,10 @@
             case '#tab-relations':
                 loadTab(target, BASE + 'api/persons/' + PID + '/relations', function (d) {
                     return dataTable(d, [
-                        {key: 'relation_type', label: 'Relation'},
-                        {key: 'name',          label: 'Name'},
-                        {key: 'father_name',   label: "Father's Name"},
-                        {key: 'cnic',          label: 'CNIC'},
+                        {key: 'relation_type',   label: 'Relation Type'},
+                        {key: 'name',            label: 'Relation With'},
+                        {key: 'cnic',            label: 'CNIC'},
+                        {key: 'country',         label: 'Country'},
                         {key: 'under_custodian', label: 'Under Custody',
                             render: function (r) { return r.under_custodian ? 'Yes' : 'No'; }}
                     ], {
@@ -650,10 +711,12 @@
                     var formWrapAff   = _makeFormWrap('#tab-affiliations', 'info');
                     var formWrapTrain = _makeFormWrap('#tab-trainings', 'success');
 
-                    var addAffBtn = '<button class="btn btn-sm btn-success btn-add-row mr-2" data-tab="' + target + '">'
-                        + '<i class="fas fa-plus mr-1"></i>Add Affiliation</button>';
-                    var addTrainBtn = '<button class="btn btn-sm btn-info btn-add-training" data-tab="' + target + '">'
-                        + '<i class="fas fa-plus mr-1"></i>Add Training</button>';
+                    var addAffBtn   = '<div class="tab-add-btn-wrap d-inline-block mr-2" data-tab="#tab-affiliations">'
+                        + '<button class="btn btn-sm btn-success btn-add-row" data-tab="' + target + '">'
+                        + '<i class="fas fa-plus mr-1"></i>Add Affiliation</button></div>';
+                    var addTrainBtn = '<div class="tab-add-btn-wrap d-inline-block" data-tab="#tab-trainings">'
+                        + '<button class="btn btn-sm btn-info btn-add-training" data-tab="' + target + '">'
+                        + '<i class="fas fa-plus mr-1"></i>Add Training</button></div>';
 
                     var affHtml = dataTable(affData, [
                         {key: 'organization_id',   label: 'Organization ID'},
@@ -672,7 +735,7 @@
                         {key: 'training_purpose',  label: 'Purpose'}
                     ], { tab: '#tab-trainings', actions: {edit: true, del: true} });
 
-                    var html = formWrapAff + formWrapTrain + '<div class="mb-2">' + addAffBtn + addTrainBtn + '</div>';
+                    var html = formWrapAff + formWrapTrain + '<div class="mb-2 d-flex justify-content-end">' + addAffBtn + addTrainBtn + '</div>';
                     html += '<h6 class="mt-3 mb-1 text-secondary">Affiliations</h6>' + affHtml;
                     html += '<h6 class="mt-4 mb-1 text-secondary">Trainings</h6>' + trainHtml;
                     $paneAff.html(html);
@@ -842,6 +905,10 @@
             $wrap.find('.inline-form-body').html(formHtml);
             $wrap.slideDown(200);
             $wrap[0].scrollIntoView({behavior: 'smooth', block: 'start'});
+            // Hide the + Add button while the inline form is open
+            $(paneId).find('.tab-add-btn-wrap[data-tab="' + tab + '"]').hide();
+            // Init Select2 on any selects in the form
+            initSelect2($wrap[0]);
         });
     }
 
@@ -851,7 +918,7 @@
                 label: 'Identity',
                 saveAction: 'update_identity',
                 fields: [
-                    {name: 'identity_id', label: 'Type', type: 'select',
+                    {name: 'identity_id', label: 'Identity Type', type: 'select',
                         lookupKey: 'identity_types', lookupId: 'id', lookupLabel: 'identity',
                         options: [
                             {value: 1, label: 'Armed Licence'}, {value: 2, label: 'Driving Licence'},
@@ -865,13 +932,13 @@
                 label: 'Education',
                 saveAction: 'update_education',
                 fields: [
-                    {name: 'edu_type', label: 'Type', type: 'select', options: [
+                    {name: 'edu_type', label: 'Education Type', type: 'select', options: [
                         {value: 0, label: 'Religious'}, {value: 1, label: 'Non-Religious'}
                     ]},
-                    {name: 'degree_name',    label: 'Degree'},
+                    {name: 'degree_name',    label: 'Degree/Certificate'},
                     {name: 'institute_name', label: 'Institution'},
-                    {name: 'complete_year',  label: 'Year', type: 'number'},
-                    {name: 'education_level', label: 'Level', type: 'select',
+                    {name: 'complete_year',  label: 'Passing Year', type: 'number'},
+                    {name: 'education_level', label: 'Education Level', type: 'select',
                         lookupKey: 'education_levels', lookupId: 'id', lookupLabel: 'education_level',
                         options: [
                             {value: 1, label: 'Primary'}, {value: 2, label: 'Middle'},
@@ -928,14 +995,18 @@
                 fields: [
                     {name: 'phone_number',    label: 'Phone Number'},
                     {name: 'sim_owner',       label: 'SIM Owner'},
+                    {name: 'contact_type',    label: 'Contact Type', type: 'select', options: [
+                        {value: 1, label: 'Personal'}, {value: 2, label: 'WhatsApp'},
+                        {value: 3, label: 'Official'}, {value: 4, label: 'Other'}
+                    ]},
                     {name: 'status',          label: 'Status', type: 'select', options: [
                         {value: 0, label: 'Inactive'}, {value: 1, label: 'Active'}
                     ]},
                     {name: 'connection_type', label: 'Connection', type: 'select', options: [
                         {value: 0, label: 'Post-Paid'}, {value: 1, label: 'Pre-Paid'}
                     ]},
-                    {name: 'sim_activated_at', label: 'Activated At'},
-                    {name: 'sim_last_used_at', label: 'Last Used At'}
+                    {name: 'sim_activated_at', label: 'Activated At', type: 'date'},
+                    {name: 'sim_last_used_at', label: 'Last Used At', type: 'date'}
                 ]
             },
             '#tab-relations': {
@@ -967,13 +1038,17 @@
                 fields: [
                     {name: 'fir_number',        label: 'FIR Number'},
                     {name: 'fir_date',          label: 'FIR Date', type: 'date'},
-                    {name: 'police_station_id', label: 'Police Station ID', type: 'number'},
+                    {name: 'police_station_id', label: 'Police Station', type: 'number'},
                     {name: 'sections_applied',  label: 'Sections Applied'},
                     {name: 'case_position', label: 'Case Status', type: 'select', options: [
                         {value: 1, label: 'Under Investigation'}, {value: 2, label: 'Under Trial'},
                         {value: 3, label: 'Convicted'}, {value: 4, label: 'Discharged'}
                     ]},
-                    {name: 'accused_position',  label: 'Accused Position', type: 'number'}
+                    {name: 'accused_position',  label: 'Accused Position', type: 'select', options: [
+                        {value: 1, label: 'Main Accused'},  {value: 2, label: 'Co-Accused'},
+                        {value: 3, label: 'Absconder'},     {value: 4, label: 'Suspect'},
+                        {value: 5, label: 'Witness'},       {value: 6, label: 'Arrested'}
+                    ]}
                 ]
             },
             '#tab-affiliations': {
@@ -981,13 +1056,34 @@
                 saveAction: 'update_affiliations',
                 fields: [
                     {name: 'organization_id',          label: 'Organization ID', type: 'number'},
-                    {name: 'ideological_stance',       label: 'Ideological Stance'},
-                    {name: 'designation',              label: 'Designation'},
-                    {name: 'is_trained',               label: 'Trained', type: 'select', options: [
+                    {name: 'ideological_stance',       label: 'Ideological Stance', type: 'select', options: [
+                        {value: 'Jihadi',       label: 'Jihadi'},
+                        {value: 'Sectarian',    label: 'Sectarian'},
+                        {value: 'Nationalist',  label: 'Nationalist'},
+                        {value: 'Political',    label: 'Political'},
+                        {value: 'Religious',    label: 'Religious'},
+                        {value: 'Ethnic',       label: 'Ethnic'},
+                        {value: 'Criminal',     label: 'Criminal'},
+                        {value: 'Other',        label: 'Other'}
+                    ]},
+                    {name: 'designation',              label: 'Designation', type: 'select', options: [
+                        {value: 'Founder',         label: 'Founder'},
+                        {value: 'Chief',           label: 'Chief'},
+                        {value: 'Commander',       label: 'Commander'},
+                        {value: 'Deputy',          label: 'Deputy'},
+                        {value: 'Facilitator',     label: 'Facilitator'},
+                        {value: 'Member',          label: 'Member'},
+                        {value: 'Sympathiser',     label: 'Sympathiser'},
+                        {value: 'Financier',       label: 'Financier'},
+                        {value: 'Recruiter',       label: 'Recruiter'},
+                        {value: 'Trainer',         label: 'Trainer'},
+                        {value: 'Other',           label: 'Other'}
+                    ]},
+                    {name: 'is_trained',               label: 'Is Trained', type: 'select', options: [
                         {value: 0, label: 'No'}, {value: 1, label: 'Yes'}
                     ]},
                     {name: 'details',                  label: 'Details', type: 'textarea'},
-                    {name: 'self_recruitment_details', label: 'Self-Recruitment Details', type: 'textarea'}
+                    {name: 'self_recruitment_details', label: 'Self-Recruitment Details (Did You Recruit? How?)', type: 'textarea'}
                 ]
             },
             '#tab-trainings': {
@@ -1035,6 +1131,7 @@
     $(document).on('click', '#btnEditBasic', function () {
         var lk = LOOKUPS || {};
         $('#tab-basic').html(buildBasicInfoForm(basicInfoData, lk));
+        initSelect2($('#tab-basic')[0]);
         if (basicInfoData && basicInfoData.region_id) {
             loadDistrictCascade('#basicDistrictSel', basicInfoData.region_id, basicInfoData.district_id, function () {
                 if (basicInfoData && basicInfoData.district_id) {
@@ -1053,8 +1150,17 @@
     $(document).on('click', '#btnEditDetail', function () {
         var lk = LOOKUPS || {};
         $('#tab-detailed').html(buildDetailedInfoForm(detailInfoData, lk));
+        initSelect2($('#tab-detailed')[0]);
         if (detailInfoData && detailInfoData.religion) {
             loadSectCascade('#detailSectSel', detailInfoData.religion, detailInfoData.sect);
+        }
+        // Pre-populate temporary address cascades
+        if (detailInfoData && detailInfoData.region_id) {
+            loadDistrictCascade('#detailTempDistrictSel', detailInfoData.region_id, detailInfoData.district_id, function () {
+                if (detailInfoData && detailInfoData.district_id) {
+                    loadPoliceCascade('#detailTempPsSel', detailInfoData.district_id, detailInfoData.police_station_id);
+                }
+            });
         }
     });
 
@@ -1097,7 +1203,12 @@
 
     // Cancel button on any inline form
     $(document).on('click', '.btn-inline-cancel', function () {
-        $(this).closest('.tab-inline-form-wrap').slideUp(200);
+        var $wrap  = $(this).closest('.tab-inline-form-wrap');
+        var tab    = $wrap.data('tab');
+        var paneId = (tab === '#tab-trainings') ? '#tab-affiliations' : tab;
+        $wrap.slideUp(200);
+        // Restore the + Add button
+        $(paneId).find('.tab-add-btn-wrap[data-tab="' + tab + '"]').show();
     });
 
     // ================================================================
@@ -1200,6 +1311,24 @@
             loadSectCascade('#detailSectSel', religionId, '');
         } else {
             $('#detailSectSel').html('<option value="">— Select Religion First —</option>');
+        }
+    });
+
+    // Cascade: when Temp Region changes on detail info form → reload districts
+    $(document).on('change', '#detailInfoForm [name="region_id"]', function () {
+        var regionId = $(this).val();
+        loadDistrictCascade('#detailTempDistrictSel', regionId, '', function () {
+            $('#detailTempPsSel').html('<option value="">— Select District First —</option>');
+        });
+    });
+
+    // Cascade: when Temp District changes on detail info form → reload police stations
+    $(document).on('change', '#detailInfoForm #detailTempDistrictSel', function () {
+        var districtId = $(this).val();
+        if (districtId) {
+            loadPoliceCascade('#detailTempPsSel', districtId, '');
+        } else {
+            $('#detailTempPsSel').html('<option value="">— Select District First —</option>');
         }
     });
 

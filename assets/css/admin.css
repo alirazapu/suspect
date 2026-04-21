@@ -505,3 +505,20 @@ body.login-body {
     .admin-content { margin-left: 0; }
     .admin-content { padding: 1rem .75rem; }
 }
+
+/* =========================================================
+   Utility: extra-small button (Bootstrap 4 does not ship btn-xs)
+   ========================================================= */
+.btn-xs {
+    padding: .15rem .4rem;
+    font-size: .75rem;
+    line-height: 1.2;
+    border-radius: .2rem;
+}
+
+/* =========================================================
+   Select2 Bootstrap 4 width fix
+   ========================================================= */
+.select2-container {
+    width: 100% !important;
+}

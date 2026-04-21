@@ -396,7 +396,7 @@ class Person_model extends CI_Model
             ->select("pi.id, pi.person_id,
                       pi.identity_id,
                       COALESCE(lui.identity, CONCAT('Type ', pi.identity_id)) AS identity_type,
-                      pi.identity_no AS identity_number,
+                      pi.identity_no,
                       NULL AS issue_date,
                       NULL AS expiry_date,
                       NULL AS issue_place,
@@ -546,6 +546,8 @@ class Person_model extends CI_Model
         foreach ($rows as &$r) {
             $r['status_label'] = $r['status'] ? 'Active' : 'Inactive';
             $r['connection_type_label'] = $r['connection_type'] ? 'Pre-Paid' : 'Post-Paid';
+            $contact_types = array(1 => 'Personal', 2 => 'WhatsApp', 3 => 'Official', 4 => 'Other');
+            $r['contact_type_label'] = isset($contact_types[$r['contact_type']]) ? $contact_types[$r['contact_type']] : '';
         }
 
         return $rows ?: array();
@@ -560,15 +562,19 @@ class Person_model extends CI_Model
     {
         $rows = $this->db
             ->select("pr.person_id, pr.relation_with, pr.under_custodian,
+                      pr.person_relation_type AS relation_type_id,
                       COALESCE(lrt.relation_name, '') AS relation_type,
                       CONCAT(COALESCE(rp.first_name,''),' ',COALESCE(rp.last_name,'')) AS name,
                       rp.father_name,
                       COALESCE(rpi.cnic_number, rpi.cnic_number_foreigner, '') AS cnic,
+                      COALESCE(rco.nicename, '') AS country,
                       NULL AS contact,
                       NULL AS remarks", FALSE)
-            ->join(self::T_LU_RELATION  . ' lrt', 'lrt.id = pr.person_relation_type',  'left')
-            ->join(self::T_PERSONS      . ' rp',  'rp.person_id = pr.relation_with',   'left')
-            ->join(self::T_PERSON_INITIATE . ' rpi', 'rpi.person_id = pr.relation_with', 'left')
+            ->join(self::T_LU_RELATION     . ' lrt', 'lrt.id = pr.person_relation_type',  'left')
+            ->join(self::T_PERSONS         . ' rp',  'rp.person_id = pr.relation_with',   'left')
+            ->join(self::T_PERSON_INITIATE . ' rpi', 'rpi.person_id = pr.relation_with',  'left')
+            ->join(self::T_PERSON_DETAIL   . ' rpd', 'rpd.person_id = pr.relation_with',  'left')
+            ->join(self::T_LU_COUNTRY      . ' rco', 'rco.id = rpd.nationality',           'left')
             ->where('pr.person_id', (int) $person_id)
             ->get(self::T_PERSON_RELATIONS . ' pr')
             ->result_array();
