@@ -298,7 +298,7 @@ class Person_model extends CI_Model
     {
         return $this->db
             ->select('id, organization_stance')
-            ->order_by('id', 'ASC')
+            ->order_by('organization_stance', 'ASC')
             ->get(self::T_LU_ORG_STANCE)
             ->result_array();
     }
@@ -307,7 +307,7 @@ class Person_model extends CI_Model
     {
         return $this->db
             ->select('id, organization_designation')
-            ->order_by('id', 'ASC')
+            ->order_by('organization_designation', 'ASC')
             ->get(self::T_LU_ORG_DESIGNATION)
             ->result_array();
     }
