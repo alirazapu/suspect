@@ -763,15 +763,15 @@
                                 var n = r.organization_name || '';
                                 return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
                             }},
-                        {key: 'ideological_stance', label: 'Ideological Stance',
+                        {key: 'ideological_stance_name', label: 'Ideological Stance',
                             render: function (r) {
-                                return (r.ideological_stance && r.ideological_stance !== '0')
-                                    ? escHtml(r.ideological_stance) : '<em class="text-muted">—</em>';
+                                return r.ideological_stance_name
+                                    ? escHtml(r.ideological_stance_name) : '<em class="text-muted">—</em>';
                             }},
-                        {key: 'designation', label: 'Designation',
+                        {key: 'designation_name', label: 'Designation',
                             render: function (r) {
-                                return (r.designation && r.designation !== '0')
-                                    ? escHtml(r.designation) : '<em class="text-muted">—</em>';
+                                return r.designation_name
+                                    ? escHtml(r.designation_name) : '<em class="text-muted">—</em>';
                             }},
                         {key: 'is_trained',        label: 'Trained',
                             render: function (r) { return r.is_trained ? 'Yes' : 'No'; }},
@@ -784,10 +784,10 @@
                                 var n = r.organization_name || '';
                                 return n ? escHtml(n) : (r.organization_id ? '#' + escHtml(r.organization_id) : '<em class="text-muted">—</em>');
                             }},
-                        {key: 'training_camp', label: 'Camp',
+                        {key: 'training_camp_name', label: 'Camp',
                             render: function (r) {
-                                return (r.training_camp && r.training_camp !== '0')
-                                    ? escHtml(r.training_camp) : '<em class="text-muted">—</em>';
+                                return r.training_camp_name
+                                    ? escHtml(r.training_camp_name) : '<em class="text-muted">—</em>';
                             }},
                         {key: 'training_site',     label: 'Site'},
                         {key: 'training_year',     label: 'Year'},
