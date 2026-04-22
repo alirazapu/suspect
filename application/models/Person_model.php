@@ -50,6 +50,9 @@ class Person_model extends CI_Model
     const T_LU_CASTE            = 'lu_caste';
     const T_LU_COUNTRY          = 'lu_country';
     const T_LU_MARITAL          = 'lu_marital_status';
+    const T_LU_TRAINING_CAMP    = 'lu_training_camp';
+    const T_LU_ORG_STANCE       = 'lu_organization_stance';
+    const T_LU_ORG_DESIGNATION  = 'lu_organization_designation';
     const T_ORGANIZATIONS       = 'banned_organizations';
     const T_MOBILE_COMPANIES    = 'mobile_companies';
     const T_POLICE_STATIONS     = 'police_stations';
@@ -279,6 +282,33 @@ class Person_model extends CI_Model
             ->select('org_id, org_name')
             ->order_by('org_name', 'ASC')
             ->get(self::T_ORGANIZATIONS)
+            ->result_array();
+    }
+
+    public function get_training_camps()
+    {
+        return $this->db
+            ->select('id, training_camp')
+            ->order_by('training_camp', 'ASC')
+            ->get(self::T_LU_TRAINING_CAMP)
+            ->result_array();
+    }
+
+    public function get_org_stances()
+    {
+        return $this->db
+            ->select('id, organization_stance')
+            ->order_by('id', 'ASC')
+            ->get(self::T_LU_ORG_STANCE)
+            ->result_array();
+    }
+
+    public function get_org_designations()
+    {
+        return $this->db
+            ->select('id, organization_designation')
+            ->order_by('id', 'ASC')
+            ->get(self::T_LU_ORG_DESIGNATION)
             ->result_array();
     }
 
@@ -707,8 +737,11 @@ class Person_model extends CI_Model
         $rows = $this->db
             ->select("pa.id, pa.person_id, pa.organization_id,
                       COALESCE(bo.org_name, '') AS organization_name,
-                      pa.ideological_stance,
-                      pa.designation, pa.details AS remarks,
+                      pa.ideological_stance AS ideological_stance_id,
+                      COALESCE(los.organization_stance, '') AS ideological_stance,
+                      pa.designation AS designation_id,
+                      COALESCE(lod.organization_designation, '') AS designation,
+                      pa.details AS remarks,
                       pa.self_recruitment_details, pa.is_trained,
                       NULL AS affiliation_type,
                       NULL AS name,
@@ -716,6 +749,8 @@ class Person_model extends CI_Model
                       NULL AS from_date,
                       NULL AS to_date", FALSE)
             ->join(self::T_ORGANIZATIONS . ' bo', 'bo.org_id = pa.organization_id', 'left')
+            ->join(self::T_LU_ORG_STANCE . ' los', 'los.id = pa.ideological_stance', 'left')
+            ->join(self::T_LU_ORG_DESIGNATION . ' lod', 'lod.id = pa.designation', 'left')
             ->where('pa.person_id', (int) $person_id)
             ->order_by('pa.id', 'ASC')
             ->get(self::T_PERSON_AFFILIATIONS . ' pa')
@@ -732,7 +767,13 @@ class Person_model extends CI_Model
     public function get_trainings($person_id)
     {
         $rows = $this->db
-            ->select("pt.*, COALESCE(bo.org_name, '') AS organization_name", FALSE)
+            ->select("pt.id, pt.person_id, pt.organization_id,
+                      pt.training_camp AS training_camp_id,
+                      COALESCE(ltc.training_camp, '') AS training_camp,
+                      pt.training_site, pt.training_type_id, pt.training_duration,
+                      pt.training_year, pt.training_purpose, pt.material_taught, pt.other_details,
+                      COALESCE(bo.org_name, '') AS organization_name", FALSE)
+            ->join(self::T_LU_TRAINING_CAMP . ' ltc', 'ltc.id = pt.training_camp', 'left')
             ->join(self::T_ORGANIZATIONS . ' bo', 'bo.org_id = pt.organization_id', 'left')
             ->where('pt.person_id', (int) $person_id)
             ->order_by('pt.id', 'ASC')

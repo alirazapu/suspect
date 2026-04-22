@@ -1232,29 +1232,12 @@
                     {name: 'organization_id', dataKey: 'organization_id', label: 'Organization', type: 'select',
                         lookupKey: 'organizations', lookupId: 'org_id', lookupLabel: 'org_name',
                         options: []},
-                    {name: 'ideological_stance',       label: 'Ideological Stance', type: 'select', options: [
-                        {value: 'Jihadi',       label: 'Jihadi'},
-                        {value: 'Sectarian',    label: 'Sectarian'},
-                        {value: 'Nationalist',  label: 'Nationalist'},
-                        {value: 'Political',    label: 'Political'},
-                        {value: 'Religious',    label: 'Religious'},
-                        {value: 'Ethnic',       label: 'Ethnic'},
-                        {value: 'Criminal',     label: 'Criminal'},
-                        {value: 'Other',        label: 'Other'}
-                    ]},
-                    {name: 'designation',              label: 'Designation', type: 'select', options: [
-                        {value: 'Founder',         label: 'Founder'},
-                        {value: 'Chief',           label: 'Chief'},
-                        {value: 'Commander',       label: 'Commander'},
-                        {value: 'Deputy',          label: 'Deputy'},
-                        {value: 'Facilitator',     label: 'Facilitator'},
-                        {value: 'Member',          label: 'Member'},
-                        {value: 'Sympathiser',     label: 'Sympathiser'},
-                        {value: 'Financier',       label: 'Financier'},
-                        {value: 'Recruiter',       label: 'Recruiter'},
-                        {value: 'Trainer',         label: 'Trainer'},
-                        {value: 'Other',           label: 'Other'}
-                    ]},
+                    {name: 'ideological_stance', dataKey: 'ideological_stance_id', label: 'Ideological Stance', type: 'select',
+                        lookupKey: 'org_stances', lookupId: 'id', lookupLabel: 'organization_stance',
+                        options: []},
+                    {name: 'designation', dataKey: 'designation_id', label: 'Designation', type: 'select',
+                        lookupKey: 'org_designations', lookupId: 'id', lookupLabel: 'organization_designation',
+                        options: []},
                     {name: 'is_trained',               label: 'Is Trained', type: 'select', options: [
                         {value: 0, label: 'No'}, {value: 1, label: 'Yes'}
                     ]},
@@ -1267,7 +1250,9 @@
                 saveAction: 'update_trainings',
                 fields: [
                     {name: 'organization_id', label: 'Organization (Affiliated)', type: 'affiliated-org-select'},
-                    {name: 'training_camp',     label: 'Camp'},
+                    {name: 'training_camp', dataKey: 'training_camp_id', label: 'Camp', type: 'select',
+                        lookupKey: 'training_camps', lookupId: 'id', lookupLabel: 'training_camp',
+                        options: []},
                     {name: 'training_site',     label: 'Site'},
                     {name: 'training_year',     label: 'Year', type: 'number'},
                     {name: 'training_duration', label: 'Duration'},
