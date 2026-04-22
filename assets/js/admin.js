@@ -425,9 +425,12 @@
     }
 
     // ----------------------------------------------------------------
-    // Save helper: POST JSON → server, show toast, optionally reload tab
+    // Save helper: POST JSON → server, show toast, optionally reload tab.
+    // Pass $btn to disable it for the duration of the request so that
+    // clicking Save multiple times does not create duplicate records.
     // ----------------------------------------------------------------
-    function saveRecord(url, data, tabId, successMsg) {
+    function saveRecord(url, data, tabId, successMsg, $btn) {
+        if ($btn && $btn.length) { $btn.prop('disabled', true); }
         $.ajax({
             url: url,
             method: 'POST',
@@ -440,10 +443,12 @@
                     reloadTab(tabId);
                 } else {
                     showToast('danger', (resp && resp.message) ? resp.message : 'Save failed.');
+                    if ($btn && $btn.length) { $btn.prop('disabled', false); }
                 }
             },
             error: function () {
                 showToast('danger', 'Network error. Please try again.');
+                if ($btn && $btn.length) { $btn.prop('disabled', false); }
             }
         });
     }
@@ -1335,19 +1340,21 @@
     // Save basic info form → POST, on success reload tab (shows fresh read-only view)
     $(document).on('submit', '#basicinfoForm', function (e) {
         e.preventDefault();
-        var data = $(this).serializeArray().reduce(function (obj, item) {
+        var $form = $(this);
+        var data = $form.serializeArray().reduce(function (obj, item) {
             obj[item.name] = item.value; return obj;
         }, {});
-        saveRecord(BASE + 'personprofile/update_basic_info', data, '#tab-basic', 'Basic info updated.');
+        saveRecord(BASE + 'personprofile/update_basic_info', data, '#tab-basic', 'Basic info updated.', $form.find('[type="submit"]'));
     });
 
     // Save detailed info form → POST, on success reload tab
     $(document).on('submit', '#detailInfoForm', function (e) {
         e.preventDefault();
-        var data = $(this).serializeArray().reduce(function (obj, item) {
+        var $form = $(this);
+        var data = $form.serializeArray().reduce(function (obj, item) {
             obj[item.name] = item.value; return obj;
         }, {});
-        saveRecord(BASE + 'personprofile/update_detail_info', data, '#tab-detailed', 'Detail info updated.');
+        saveRecord(BASE + 'personprofile/update_detail_info', data, '#tab-detailed', 'Detail info updated.', $form.find('[type="submit"]'));
     });
 
     // Inline form save (tab child-record tabs)
@@ -1413,7 +1420,7 @@
             var data = $form.serializeArray().reduce(function (obj, item) {
                 obj[item.name] = item.value; return obj;
             }, {});
-            saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId);
+            saveRecord(BASE + 'personprofile/' + saveAction, data, reloadTabId, null, $form.find('[type="submit"]'));
         }
     });
 

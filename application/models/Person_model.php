@@ -147,9 +147,11 @@ class Person_model extends CI_Model
         // Category — filter using the correlated subquery directly in WHERE so that
         // count_all_results() (which strips SELECT aliases) does not break with
         // "Unknown column 'category_id' in 'having clause'" (MySQL error 1054).
+        // The operator must be included in the key string because CI3's where()
+        // with $escape=FALSE concatenates key+value verbatim (no implicit '=').
         if (isset($filters['category']) && $filters['category'] !== '') {
             $this->db->where(
-                '(SELECT pc2.category_id FROM person_category pc2 WHERE pc2.person_id = p.person_id ORDER BY pc2.added_on DESC LIMIT 1)',
+                '(SELECT pc2.category_id FROM person_category pc2 WHERE pc2.person_id = p.person_id ORDER BY pc2.added_on DESC LIMIT 1) =',
                 (int) $filters['category'],
                 FALSE
             );
