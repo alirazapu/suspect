@@ -730,17 +730,17 @@ class Person_model extends CI_Model
 
     /**
      * Affiliations tab (organization + ideological stance + designation).
-     * admin.js keys: organization_name, ideological_stance_name, designation_name, is_trained, remarks
-     * Form pre-fill keys: ideological_stance_id, designation_id
+     * admin.js display keys: organization_name, ideological_stance_name, designation_name, is_trained, remarks
+     * Form pre-fill keys: ideological_stance (raw int), designation (raw int)
      */
     public function get_affiliations($person_id)
     {
         $rows = $this->db
             ->select("pa.id, pa.person_id, pa.organization_id,
                       COALESCE(bo.org_name, '') AS organization_name,
-                      pa.ideological_stance AS ideological_stance_id,
+                      pa.ideological_stance,
                       COALESCE(los.organization_stance, '') AS ideological_stance_name,
-                      pa.designation AS designation_id,
+                      pa.designation,
                       COALESCE(lod.organization_designation, '') AS designation_name,
                       pa.details AS remarks,
                       pa.self_recruitment_details, pa.is_trained,
@@ -764,13 +764,13 @@ class Person_model extends CI_Model
      * Trainings tab — joined with banned_organizations to resolve org name and lu_training_camp to resolve camp name.
      * admin.js display keys: organization_name, training_camp_name, training_site, training_year,
      *                        training_duration, training_purpose, material_taught, other_details
-     * Form pre-fill key: training_camp_id
+     * Form pre-fill key: training_camp (raw int)
      */
     public function get_trainings($person_id)
     {
         $rows = $this->db
             ->select("pt.id, pt.person_id, pt.organization_id,
-                      pt.training_camp AS training_camp_id,
+                      pt.training_camp,
                       COALESCE(ltc.training_camp, '') AS training_camp_name,
                       pt.training_site, pt.training_type_id, pt.training_duration,
                       pt.training_year, pt.training_purpose, pt.material_taught, pt.other_details,

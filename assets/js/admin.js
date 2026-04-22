@@ -1232,10 +1232,10 @@
                     {name: 'organization_id', dataKey: 'organization_id', label: 'Organization', type: 'select',
                         lookupKey: 'organizations', lookupId: 'org_id', lookupLabel: 'org_name',
                         options: []},
-                    {name: 'ideological_stance', dataKey: 'ideological_stance_id', label: 'Ideological Stance', type: 'select',
+                    {name: 'ideological_stance', label: 'Ideological Stance', type: 'select',
                         lookupKey: 'org_stances', lookupId: 'id', lookupLabel: 'organization_stance',
                         options: []},
-                    {name: 'designation', dataKey: 'designation_id', label: 'Designation', type: 'select',
+                    {name: 'designation', label: 'Designation', type: 'select',
                         lookupKey: 'org_designations', lookupId: 'id', lookupLabel: 'organization_designation',
                         options: []},
                     {name: 'is_trained',               label: 'Is Trained', type: 'select', options: [
@@ -1250,7 +1250,7 @@
                 saveAction: 'update_trainings',
                 fields: [
                     {name: 'organization_id', label: 'Organization (Affiliated)', type: 'affiliated-org-select'},
-                    {name: 'training_camp', dataKey: 'training_camp_id', label: 'Camp', type: 'select',
+                    {name: 'training_camp', label: 'Camp', type: 'select',
                         lookupKey: 'training_camps', lookupId: 'id', lookupLabel: 'training_camp',
                         options: []},
                     {name: 'training_site',     label: 'Site'},
