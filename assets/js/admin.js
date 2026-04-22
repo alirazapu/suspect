@@ -1664,18 +1664,4 @@
         showDocGallery(url, filename);
     });
 
-    // ----------------------------------------------------------------
-    // Person listing: live search (debounce 400 ms)
-    // ----------------------------------------------------------------
-    var searchTimer;
-    $('#quick-search').on('keyup', function () {
-        clearTimeout(searchTimer);
-        var val = $(this).val();
-        searchTimer = setTimeout(function () {
-            var $form = $('#filterForm');
-            $form.find('[name="q"]').val(val);
-            $form.submit();
-        }, 400);
-    });
-
 }(jQuery));

@@ -118,17 +118,6 @@ class Person_model extends CI_Model
         $this->db->join(self::T_DISTRICT        . ' d',   'd.district_id = p.district_id','left');
         $this->db->where('p.is_deleted', 0);
 
-        // Name / father-name quick search
-        if ( ! empty($filters['q'])) {
-            $q = trim($filters['q']);
-            $this->db->group_start()
-                     ->like('p.first_name',  $q)
-                     ->or_like('p.last_name',    $q)
-                     ->or_like('p.middle_name',  $q)
-                     ->or_like('p.father_name',  $q)
-                     ->group_end();
-        }
-
         // Gender — stored as integer (1=Male 2=Female 3=Other)
         if ( ! empty($filters['gender'])) {
             $this->db->where('pdi.gender', (int) $filters['gender']);
@@ -176,14 +165,16 @@ class Person_model extends CI_Model
         // Date range — based on the date the person's most-recent category was assigned
         if ( ! empty($filters['from_date'])) {
             $this->db->where(
-                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) >=",
-                $filters['from_date'], FALSE
+                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) >= " . $this->db->escape($filters['from_date']),
+                NULL,
+                FALSE
             );
         }
         if ( ! empty($filters['to_date'])) {
             $this->db->where(
-                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) <=",
-                $filters['to_date'], FALSE
+                "(SELECT MIN(pc3.added_on) FROM person_category pc3 WHERE pc3.person_id = p.person_id) <= " . $this->db->escape($filters['to_date']),
+                NULL,
+                FALSE
             );
         }
     }

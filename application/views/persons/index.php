@@ -18,28 +18,6 @@
     <div class="card-body">
         <?php echo form_open('persons', array('method' => 'get', 'id' => 'filterForm')); ?>
 
-        <!-- Quick search -->
-        <div class="row align-items-end mb-2">
-            <div class="col-md-6 col-lg-5">
-                <div class="input-group">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    </div>
-                    <input type="text" id="quick-search" name="q" class="form-control"
-                           placeholder="Search by name, CNIC or father name…"
-                           value="<?php echo htmlspecialchars($filters['q'], ENT_QUOTES, 'UTF-8'); ?>">
-                </div>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="fas fa-search mr-1"></i>Search
-                </button>
-                <a href="<?php echo base_url('persons'); ?>" class="btn btn-secondary btn-sm ml-1">
-                    <i class="fas fa-times mr-1"></i>Clear
-                </a>
-            </div>
-        </div>
-
         <!-- Advanced filters (hidden by default) -->
         <div id="advancedFilters" style="display:none;">
             <hr class="mt-1 mb-2">

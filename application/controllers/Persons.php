@@ -23,7 +23,6 @@ class Persons extends CI_Controller
     public function index()
     {
         $filters = array(
-            'q'           => $this->input->get('q',           TRUE),
             'gender'      => $this->input->get('gender',      TRUE),
             'province'    => $this->input->get('province',    TRUE),
             'district'    => $this->input->get('district',    TRUE),
