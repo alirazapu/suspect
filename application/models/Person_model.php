@@ -144,9 +144,15 @@ class Person_model extends CI_Model
             $this->db->like('d.name', $filters['district'], 'both');
         }
 
-        // Category — filter on the aliased correlated-subquery result via HAVING
+        // Category — filter using the correlated subquery directly in WHERE so that
+        // count_all_results() (which strips SELECT aliases) does not break with
+        // "Unknown column 'category_id' in 'having clause'" (MySQL error 1054).
         if (isset($filters['category']) && $filters['category'] !== '') {
-            $this->db->having('category_id', (int) $filters['category']);
+            $this->db->where(
+                '(SELECT pc2.category_id FROM person_category pc2 WHERE pc2.person_id = p.person_id ORDER BY pc2.added_on DESC LIMIT 1)',
+                (int) $filters['category'],
+                FALSE
+            );
         }
 
         // CNIC
