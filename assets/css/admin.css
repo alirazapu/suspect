@@ -7,12 +7,7 @@
  * locally downloaded Bootstrap 4 & FontAwesome 5 files under assets/vendor/.
  */
 
-/* =========================================================
-   Bootstrap / vendor fallback CDN via @import
-   Remove these @import lines once local vendor files exist.
-   ========================================================= */
-@import url('https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+/* Bootstrap and FontAwesome are loaded via <link> in layout/header.php */
 
 /* =========================================================
    Root variables

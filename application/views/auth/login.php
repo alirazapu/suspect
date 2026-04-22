@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login &mdash; Suspect</title>
+    <!-- Vendor CSS — self-hosted to avoid CDN blocking on restricted networks -->
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/bootstrap/css/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/fontawesome/css/all.min.css'); ?>">
+    <!-- Suspect admin theme -->
     <link rel="stylesheet" href="<?php echo base_url('assets/css/admin.css'); ?>">
 </head>
 <body class="login-body">

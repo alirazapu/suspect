@@ -5,20 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? htmlspecialchars($page_title) . ' — Suspect' : 'Suspect — Person Intelligence Portal'; ?></title>
 
-    <!--
-        Vendor assets — for production, download and place locally:
-          assets/vendor/bootstrap/css/bootstrap.min.css
-          assets/vendor/fontawesome/css/all.min.css
-          assets/vendor/jquery/jquery.min.js
-          assets/vendor/bootstrap/js/bootstrap.bundle.min.js
-        Until then, CDN fallbacks are used via the admin.css @import directives.
-    -->
-
-    <!-- Suspect admin theme (includes Bootstrap 4 + FontAwesome 5 via CDN @import fallback) -->
+    <!-- Vendor CSS — self-hosted to avoid CDN blocking on restricted networks -->
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/bootstrap/css/bootstrap.min.css'); ?>">
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/fontawesome/css/all.min.css'); ?>">
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/select2/css/select2.min.css'); ?>">
+    <link rel="stylesheet" href="<?php echo base_url('assets/vendor/select2-bootstrap4/select2-bootstrap4.min.css'); ?>">
+    <!-- Suspect admin theme -->
     <link rel="stylesheet" href="<?php echo base_url('assets/css/admin.css'); ?>">
-    <!-- Select2 — searchable dropdowns -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css">
     <?php if (isset($extra_css)) echo $extra_css; ?>
 </head>
 <body class="admin-body">
