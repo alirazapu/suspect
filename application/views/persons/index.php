@@ -58,7 +58,7 @@
                         <option value="">All Categories</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?php echo (int) $cat['id']; ?>"
-                                <?php echo ($filters['category'] == $cat['id']) ? 'selected' : ''; ?>>
+                                <?php echo ($filters['category'] !== '' && $filters['category'] == $cat['id']) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($cat['label'], ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
